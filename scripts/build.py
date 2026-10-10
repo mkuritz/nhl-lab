@@ -455,6 +455,130 @@ for ab in ABBRS:
 gproj = [dict(gid=gid, team=ab, goalie=st["name"] if st else None, gid_=st["id"] if st else None, sv=st["sv"] if st else None, why=why, backup=backup,
               date=next(g["date"] for g in upcoming if g["id"] == gid)) for (gid, ab), (st, why, backup) in goalie_proj.items()]
 
+
+# ================= v2: hot list, matchup grades, SOS, team sims, usage =================
+import random
+hot = []
+for pid, p in PL.items():
+    if p["pos"] == "G": continue
+    cache = details.get(pid, (None, {}))[1] or {}
+    cur = sorted(cache.get(str(SEASON), []), key=lambda r: r[1]); prev = sorted(cache.get(str(PREV), []), key=lambda r: r[1])
+    log = prev + cur
+    if len(log) < 5: continue
+    rates = skater_rates(pid, p["pos"])
+    def win(n):
+        w = log[-n:]; k = len(w)
+        return dict(n=k, g=sum(r[5] for r in w), p=sum(r[5] + r[6] for r in w), s=sum(r[7] for r in w), ppp=sum(r[8] for r in w),
+                    toi=r3(sum(r[9] for r in w) / k / 60, 1), crossSeason=any(r in prev for r in w))
+    l5, l10 = win(5), win(10)
+    ps = 0
+    for r in reversed(log):
+        if r[5] + r[6] > 0: ps += 1
+        else: break
+    gs = 0
+    for r in reversed(log):
+        if r[5] > 0: gs += 1
+        else: break
+    base_toi = (sum(r[9] for r in prev) / len(prev) / 60) if prev else None
+    hp = l10["p"] / l10["n"] - rates["p"]; hg = l10["g"] / l10["n"] - rates["g"]; hs = l10["s"] / l10["n"] - rates["s"]
+    score = hp * 1.0 + hg * 1.5 + hs * 0.15 + 0.05 * ps
+    hot.append(dict(pid=pid, name=p["name"], team=p["team"], pos=p["pos"], l5=l5, l10=l10, ptStreak=ps, gStreak=gs,
+                    base=dict(p=r3(rates["p"]), g=r3(rates["g"]), s=r3(rates["s"], 2)), baseToi=r3(base_toi, 1),
+                    toiDelta=r3(l5["toi"] - base_toi, 1) if base_toi else None, curGp=len(cur), score=r3(score), inj=p["inj"]["status"] if p["inj"] else None))
+hot.sort(key=lambda x: -x["score"])
+
+# matchup grades per game per team (offense env vs opponent; defensive env = opponent offense)
+LGF = LGA
+def off_env(team, opp, gid, opp_b2b, own_b2b):
+    gl, gwhy, backup = goalie_for(gid, opp, opp_b2b)
+    gsv = gl["sv"] if gl else LSV[SEASON]
+    g_f = max(0.75, min(1.3, (1 - gsv) / (1 - LSV[SEASON])))
+    opk = (TEAMS[opp].get("cur") or TEAMS[opp].get("prev") or {}).get("pk") or LPK
+    pk_f = 1 + 0.2 * (((1 - opk) / (1 - LPK)) - 1)
+    v = (0.45 * g_f + 0.35 * team_factor(opp, "gapg", LGA) + 0.2 * team_factor(opp, "sapg", LSA)) * pk_f * (1.04 if opp_b2b else 1) * (0.96 if own_b2b else 1)
+    return v, gl, backup
+def def_env(team, opp, opp_b2b):
+    opp_pp = (TEAMS[opp].get("cur") or TEAMS[opp].get("prev") or {}).get("pp") or 0.2
+    v = (0.6 * team_factor(opp, "gfpg", LGF) + 0.4 * team_factor(opp, "sfpg", LSA)) * (1 + 0.2 * (opp_pp / 0.2 - 1)) * (0.96 if opp_b2b else 1)
+    return v
+def grade(v, inv=False):
+    # offense: higher env = easier. defense: higher opp offense = harder.
+    if not inv: return "Strong" if v >= 1.06 else "Weak" if v <= 0.94 else "Neutral"
+    return "Easy" if v <= 0.94 else "Tough" if v >= 1.06 else "Neutral"
+grades = {}
+for g in upcoming:
+    for side, oside in (("home", "away"), ("away", "home")):
+        t, o = g[side], g[oside]
+        ov, gl, backup = off_env(t, o, g["id"], g[oside[0] + "B2B"], g[side[0] + "B2B"])
+        dv = def_env(t, o, g[oside[0] + "B2B"])
+        grades[f'{g["id"]}-{t}'] = dict(o=r3(ov), og=grade(ov), d=r3(dv), dg=grade(dv, True), goalie=gl["name"] if gl else None, backup=backup)
+sos = {}
+for ab in ABBRS:
+    tg = [g for g in upcoming if ab in (g["home"], g["away"])]
+    def agg(n):
+        x = [grades[f'{g["id"]}-{ab}'] for g in tg[:n]]
+        if not x: return None
+        return dict(n=len(x), off=r3(sum(y["o"] for y in x) / len(x)), dfn=r3(sum(y["d"] for y in x) / len(x)),
+                    b2b=sum(1 for g in tg[:n] if (g["home"] == ab and g["hB2B"]) or (g["away"] == ab and g["aB2B"])),
+                    home=sum(1 for g in tg[:n] if g["home"] == ab))
+    sos[ab] = {"5": agg(5), "10": agg(10)}
+
+# team season simulation (estimate)
+def tstr(ab):
+    gf = team_factor(ab, "gfpg", LGF, 15) * LGF; ga = team_factor(ab, "gapg", LGA, 15) * LGA
+    return gf, ga
+STR = {ab: tstr(ab) for ab in ABBRS}
+def p_home_win(h, a):
+    lh = (STR[h][0] * STR[a][1] / LGA) * 1.03; la = (STR[a][0] * STR[h][1] / LGA) * 0.97
+    ph = sum(math.exp(-lh) * lh**i / math.factorial(i) * sum(math.exp(-la) * la**j / math.factorial(j) for j in range(i)) for i in range(1, 12))
+    pt = sum(math.exp(-lh) * lh**i / math.factorial(i) * math.exp(-la) * la**i / math.factorial(i) for i in range(12))
+    return ph, pt
+rem = [g for g in games if g["state"] not in ("OFF", "FINAL")]
+probs = [(g["home"], g["away"]) + p_home_win(g["home"], g["away"]) for g in rem]
+N = 2000; rng = random.Random(42)
+agg_pts = {ab: [] for ab in ABBRS}; po = {ab: 0 for ab in ABBRS}
+DIV = {ab: TEAMS[ab]["div"] for ab in ABBRS}; CONF = {ab: TEAMS[ab]["conf"] for ab in ABBRS}
+for _ in range(N):
+    pts = {ab: TEAMS[ab]["pts"] for ab in ABBRS}
+    for h, a, ph, pt in probs:
+        u = rng.random()
+        if u < ph: pts[h] += 2
+        elif u < ph + pt:
+            if rng.random() < 0.5: pts[h] += 2; pts[a] += 1
+            else: pts[a] += 2; pts[h] += 1
+        else: pts[a] += 2
+    for ab in ABBRS: agg_pts[ab].append(pts[ab])
+    for conf in set(CONF.values()):
+        cteams = [ab for ab in ABBRS if CONF[ab] == conf]; inn = set()
+        for dv in set(DIV[ab] for ab in cteams):
+            inn |= set(sorted([ab for ab in cteams if DIV[ab] == dv], key=lambda x: -pts[x] - rng.random() * 0.1)[:3])
+        inn |= set(sorted([ab for ab in cteams if ab not in inn], key=lambda x: -pts[x] - rng.random() * 0.1)[:2])
+        for ab in inn: po[ab] += 1
+sim = {}
+for ab in ABBRS:
+    v = sorted(agg_pts[ab])
+    sim[ab] = dict(mean=round(sum(v) / N, 1), p10=v[N // 10], p90=v[9 * N // 10], playoff=r3(po[ab] / N), gf=r3(STR[ab][0], 2), ga=r3(STR[ab][1], 2),
+                   pace=round(TEAMS[ab]["pts"] / TEAMS[ab]["gp"] * 82, 1) if TEAMS[ab]["gp"] else None)
+
+# usage / estimated PP units
+usage = {}
+for ab in ABBRS:
+    sk = [(pid, SK[SEASON].get(pid) or {}) for pid, p in PL.items() if p["team"] == ab and p["pos"] != "G"]
+    sk = [(pid, r) for pid, r in sk if r.get("gamesPlayed")]
+    rows = [dict(pid=pid, name=PL[pid]["name"], pos=PL[pid]["pos"], gp=r["gamesPlayed"], toi=r3((r.get("timeOnIcePerGame") or 0) / 60, 1),
+                 ev=r3((r.get("evTimeOnIcePerGame") or 0) / 60, 1), pp=r3((r.get("ppTimeOnIcePerGame") or 0) / 60, 1),
+                 sh=r3((r.get("shTimeOnIcePerGame") or 0) / 60, 1), shifts=r3(r.get("shiftsPerGame"), 1)) for pid, r in sk]
+    rows.sort(key=lambda x: -(x["pp"] or 0))
+    for i, x in enumerate(rows): x["ppUnit"] = "PP1" if i < 5 and x["pp"] and x["pp"] > 1 else "PP2" if i < 10 and x["pp"] and x["pp"] > 0.5 else None
+    rows.sort(key=lambda x: -(x["toi"] or 0))
+    usage[ab] = rows
+team_inj = {ab: [] for ab in ABBRS}
+for (ab, nm), v in inj.items():
+    if ab in team_inj:
+        pid = next((pid for pid, p in PL.items() if p["team"] == ab and norm(p["name"]) == nm), None)
+        team_inj[ab].append(dict(v, name=next((p["name"] for p in PL.values() if p["team"] == ab and norm(p["name"]) == nm), nm.title()), pid=pid))
+wj("hot.json", hot[:600]); wj("grades.json", dict(grades=grades, sos=sos)); wj("teamx.json", dict(sim=sim, usage=usage, inj=team_inj, sims=N))
+
 wj("teams.json", TEAMS); wj("games.json", games); wj("players.json", index)
 wj("slate.json", dict(days=slate_days[:2], rows=slate[:300], goalies=gproj))
 wj("h2h_flags.json", legends); wj("goalies.json", goalies)
