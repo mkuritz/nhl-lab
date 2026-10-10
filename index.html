@@ -1,0 +1,161 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NHL Lab</title><link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏒</text></svg>"><meta name="theme-color" content="#0b1020">
+<style>
+:root{--bg:#0b1020;--p:#131a2e;--p2:#1a2340;--b:#26304f;--t:#e6ebff;--m:#8d97b8;--a:#4fc3ff;--g:#3ddc97;--r:#ff6b7a;--y:#ffc857;--v:#b28dff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+a{color:var(--a);text-decoration:none;cursor:pointer}header{position:sticky;top:0;z-index:5;background:rgba(11,16,32,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--b)}
+.top{display:flex;align-items:center;gap:12px;padding:10px 16px}.logo{font-weight:800;font-size:18px;letter-spacing:.3px}.logo span{color:var(--a)}
+.badge{margin-left:auto;font-size:12px;color:var(--m);background:var(--p);border:1px solid var(--b);padding:4px 10px;border-radius:99px;white-space:nowrap}
+nav{display:flex;gap:4px;overflow-x:auto;padding:0 12px 8px}nav a{color:var(--m);padding:6px 12px;border-radius:8px;white-space:nowrap;font-weight:600}nav a.on{background:var(--p2);color:var(--t)}
+main{max-width:1200px;margin:0 auto;padding:16px}h2{margin:6px 0 12px;font-size:20px}h3{margin:0 0 10px;font-size:15px}
+.card{background:var(--p);border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:14px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 8px;border-bottom:1px solid var(--b);text-align:right;white-space:nowrap}
+th{color:var(--m);font-weight:600;position:sticky;top:0;background:var(--p);cursor:pointer;user-select:none}td:first-child,th:first-child,.l{text-align:left}
+.tw{overflow-x:auto;max-height:70vh}tr:hover td{background:var(--p2)}
+.m{color:var(--m)}.g{color:var(--g)}.r{color:var(--r)}.y{color:var(--y)}.small{font-size:12px}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--p2);border:1px solid var(--b);margin:1px 2px}
+.pill.leg{background:#3a2a05;border-color:#7a5a10;color:var(--y)}.pill.bk{background:#3a0f18;border-color:#7a1f30;color:var(--r)}.pill.b2b{background:#1d1640;border-color:#46399a;color:var(--v)}
+input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);border-radius:8px;padding:7px 10px;font:inherit}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.bar{height:6px;background:var(--p2);border-radius:4px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--g))}
+.cand{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--b)}.cand img{width:44px;height:44px;border-radius:50%;background:var(--p2)}
+.cand .pct{margin-left:auto;text-align:right;font-weight:800;font-size:18px}.why{margin:4px 0 0;padding-left:16px;color:var(--m);font-size:12px}
+.hero{display:flex;gap:14px;align-items:center}.hero>img{width:84px;height:84px;border-radius:50%;background:var(--p2)}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.kv div{background:var(--p2);border-radius:8px;padding:8px}.kv b{display:block;font-size:17px}
+.note{background:#10203a;border:1px solid #1f3f6a;border-radius:10px;padding:10px;font-size:12px;color:#b8cdf0}
+.tlogo{width:20px;height:20px;vertical-align:middle;margin-right:4px}
+@media(max-width:640px){main{padding:10px}th,td{padding:6px 5px}.hide-m{display:none}}
+</style></head><body>
+<header><div class="top"><div class="logo">NHL <span>Lab</span></div><div class="badge" id="badge">Loading…</div></div>
+<nav id="nav"></nav></header><main id="app"><div class="card">Loading data…</div></main>
+<script>
+const LS='nhllab:',V=[['slate','Daily Slate'],['schedule','Schedule'],['teams','Teams'],['players','Players'],['war','WAR'],['h2h','H2H Flags'],['goalies','Goalies'],['method','Methodology']];
+const D={},$=s=>document.querySelector(s),pc=x=>x==null?'–':(x*100).toFixed(0)+'%',f=(x,n=2)=>x==null?'–':(+x).toFixed(n),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(LS+k))??d}catch(e){return d}},set:(k,v)=>localStorage.setItem(LS+k,JSON.stringify(v))};
+const logo=a=>D.teams[a]?`<img class="tlogo" src="${D.teams[a].logo}" alt="">`:'';
+const pl=(id,n)=>`<a href="#player/${id}">${esc(n)}</a>`,tm=a=>`<a href="#team/${a}">${logo(a)}${a}</a>`;
+const fmtD=d=>new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+async function J(u){const r=await fetch(u+'?v='+(D.meta?.updated||Date.now()));if(!r.ok)throw Error(u);return r.json()}
+function sortable(el){el.querySelectorAll('table').forEach(t=>{t.querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{const b=t.tBodies[0],rs=[...b.rows],asc=th.dataset.s!=='a';th.dataset.s=asc?'a':'d';
+rs.sort((x,y)=>{const a=x.cells[i].dataset.v??x.cells[i].innerText,c=y.cells[i].dataset.v??y.cells[i].innerText,na=parseFloat(a),nc=parseFloat(c);const r=isNaN(na)||isNaN(nc)?a.localeCompare(c):na-nc;return asc?-r:r});rs.forEach(r=>b.appendChild(r))})})}
+function tbl(h,rows){return `<div class="tw"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`}
+const td=(v,s)=>`<td${s!=null?` data-v="${s}"`:''}>${v}</td>`;
+
+function slate(){const s=D.slate,days=s.days;let day=ls.get('day',days[0]);if(!days.includes(day))day=days[0];
+const gs=D.games.filter(g=>g.date===day),rows=s.rows.filter(r=>r.date===day);const pos=ls.get('slpos','all');
+const R=rows.filter(r=>pos==='all'||(pos==='D'?r.pos==='D':r.pos!=='D'));
+const gq=s.goalies.filter(g=>g.date===day);
+let h=`<h2>Daily Slate</h2><div class="filters">${days.map(d=>`<a class="pill" style="${d===day?'background:var(--a);color:#000':''}" onclick="ls.set('day','${d}');route()">${fmtD(d)}</a>`).join('')}
+<select onchange="ls.set('slpos',this.value);route()">${[['all','All skaters'],['F','Forwards'],['D','Defense']].map(([v,l])=>`<option value="${v}"${v===pos?' selected':''}>${l}</option>`).join('')}</select></div>
+<div class="grid"><div class="card" style="grid-column:1/-1"><h3>Games (${gs.length})</h3><div class="grid">${gs.map(g=>{const ga=gq.find(x=>x.gid===g.id&&x.team===g.away),gh=gq.find(x=>x.gid===g.id&&x.team===g.home);
+const gl=x=>x?`${x.gid_?pl(x.gid_,x.goalie):'?'} <span class="m">${f(x.sv,3)}</span>${x.backup?' <span class="pill bk">BACKUP/ALT</span>':''}`:'–';
+return `<div><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
+<div class="small m">${g.hs!=null?`${g.state==='OFF'||g.state==='FINAL'?'Final':'Live'}: ${g.away} ${g.as_} – ${g.home} ${g.hs}`:g.state==='FUT'||g.state==='PRE'?`Proj. goalies (heuristic): ${gl(ga)} vs ${gl(gh)}`:'In progress'}</div></div>`}).join('')||'<span class="m">No games.</span>'}</div>
+<p class="small m">Goalies are <b>projected</b> from recent starts, back-to-backs and ESPN injury status — not confirmed lineups. Check team news before puck drop.</p></div>
+<div class="card"><h3>Top goal-scorer candidates</h3>${R.slice(0,25).map(r=>cand(r,'pG','to score')).join('')}</div>
+<div class="card"><h3>Top point candidates</h3>${[...R].sort((a,b)=>b.pP-a.pP).slice(0,25).map(r=>cand(r,'pP','for a point')).join('')}</div>
+<div class="card"><h3>Shot volume (P 3+ SOG)</h3>${[...R].sort((a,b)=>b.p3S-a.p3S).slice(0,20).map(r=>cand(r,'p3S','3+ shots',`xSOG ${f(r.xs,1)}`)).join('')}</div>
+<div class="card"><h3>Notable spots</h3>${notable(R)}</div></div>`;return h}
+function cand(r,k,lab,extra=''){return `<div class="cand"><img loading="lazy" src="https://assets.nhle.com/mugs/nhl/latest/${r.pid}.png" onerror="this.style.visibility='hidden'" alt="">
+<div style="min-width:0"><b>${pl(r.pid,r.name)}</b> <span class="m small">${r.team} ${r.pos} · ${r.home?'vs':'@'} ${r.opp}</span>${r.legend?'<span class="pill leg">LEGENDARY H2H</span>':''}${r.backup?'<span class="pill bk">vs backup</span>':''}
+<ul class="why">${(r.why||[]).slice(0,3).map(w=>`<li>${esc(w)}</li>`).join('')}${extra?`<li>${extra}</li>`:''}</ul></div><div class="pct">${pc(r[k])}<div class="small m">${lab}</div></div></div>`}
+function notable(R){const L=R.filter(r=>r.legend),B=R.filter(r=>r.backup&&r.pG>.3);let h='';
+h+=`<b class="y">Legendary H2H tonight</b>`+(L.length?L.slice(0,10).map(r=>`<div class="small">${pl(r.pid,r.name)}: ${esc(r.legend[0])}</div>`).join(''):'<div class="small m">None on this slate.</div>');
+h+=`<br><b class="r">Shooters facing a projected backup/alternate</b>`+(B.length?B.slice(0,10).map(r=>`<div class="small">${pl(r.pid,r.name)} vs ${r.goalie} — ${pc(r.pG)} to score</div>`).join(''):'<div class="small m">None.</div>');return h}
+
+function schedule(){const t=ls.get('steam','NSH'),only=ls.get('sonly','all');const A=Object.keys(D.teams).sort();
+const gs=D.games.filter(g=>(t==='ALL'||g.home===t||g.away===t)&&(only==='all'||(only==='done'?g.hs!=null:g.hs==null)));
+const rows=gs.map(g=>{const fin=g.hs!=null;let res='';if(t!=='ALL'&&fin){const me=g.home===t,gf=me?g.hs:g.as_,ga=me?g.as_:g.hs;res=`<span class="${gf>ga?'g':'r'}">${gf>ga?'W':(g.end&&g.end!=='REG'?'OTL':'L')} ${gf}-${ga}${g.end&&g.end!=='REG'?' '+g.end:''}</span>`}else if(fin)res=`${g.as_}-${g.hs}${g.end&&g.end!=='REG'?' '+g.end:''}`;
+const me=t==='ALL'?null:(g.home===t?'h':'a');const rest=me?g[me+'Rest']:null;
+return `<tr>${td(fmtD(g.date),g.date)}${td(t==='ALL'?`${tm(g.away)} @ ${tm(g.home)}`:(me==='h'?'vs ':'@ ')+tm(me==='h'?g.away:g.home))}${td(t==='ALL'?'':me==='h'?'Home':'Away')}${td(res||`<span class="m">${g.time} ET</span>`)}${td(rest==null?'–':rest)}${td((g.aB2B?`<span class="pill b2b">${g.away} B2B</span>`:'')+(g.hB2B?`<span class="pill b2b">${g.home} B2B</span>`:''))}</tr>`});
+return `<h2>Schedule</h2><div class="filters"><select onchange="ls.set('steam',this.value);route()"><option value="ALL">All teams</option>${A.map(a=>`<option${a===t?' selected':''}>${a}</option>`).join('')}</select>
+<select onchange="ls.set('sonly',this.value);route()">${[['all','Full season'],['done','Results'],['up','Upcoming']].map(([v,l])=>`<option value="${v}"${v===only?' selected':''}>${l}</option>`).join('')}</select></div>
+<div class="card">${t!=='ALL'?`<p class="small m">${D.teams[t].name}: ${D.teams[t].b2b} back-to-backs this season. Rest = days off before the game.</p>`:''}${tbl(['Date','Matchup','H/A','Result','Rest','B2B'],rows)}</div>`}
+
+function teams(){const T=Object.values(D.teams).sort((a,b)=>a.leagueRank-b.leagueRank);
+return `<h2>Teams & Standings</h2><div class="card">${tbl(['Team','GP','W-L-OTL','PTS','P%','GF/G','GA/G','Diff','PP%','PK%','SF/G','SA/G','Home','Road','L10','Strk'],T.map(t=>{const c=t.cur||{};return `<tr>${td(tm(t.abbrev),t.abbrev)}${td(t.gp)}${td(`${t.w}-${t.l}-${t.otl}`,t.w)}${td('<b>'+t.pts+'</b>',t.pts)}${td(f(t.ptsPct,3))}${td(f(c.gfpg))}${td(f(c.gapg))}${td(`<span class="${t.diff>=0?'g':'r'}">${t.diff>0?'+':''}${t.diff}</span>`,t.diff)}${td(pc(c.pp))}${td(pc(c.pk))}${td(f(c.sfpg,1))}${td(f(c.sapg,1))}${td(t.home)}${td(t.road)}${td(t.l10)}${td(t.streak)}</tr>`}))}
+<p class="small m">Early-season team rates are small samples (${T[0].gp||0} GP). Projections blend them with last season's rates.</p></div>`}
+function team(a){const t=D.teams[a];if(!t)return '<div class="card">Unknown team</div>';const c=t.cur||{},p=t.prev||{},s=t.splits;const P=D.players.filter(x=>x.team===a);
+const gq=D.goalies[a];const up=D.games.filter(g=>(g.home===a||g.away===a)&&g.hs==null).slice(0,8);
+return `<div class="card hero"><img src="${t.logo}" alt=""><div><h2 style="margin:0">${t.name}</h2><div class="m">${t.div} · ${t.w}-${t.l}-${t.otl}, ${t.pts} pts · Streak ${t.streak} · L10 ${t.l10}</div></div></div>
+<div class="grid"><div class="card"><h3>Team rates</h3>${tbl(['','This season','Last season'],[['GF/G','gfpg'],['GA/G','gapg'],['SF/G','sfpg'],['SA/G','sapg'],['PP%','pp'],['PK%','pk']].map(([l,k])=>`<tr><td>${l}</td><td>${k.length==2?pc(c[k]):f(c[k])}</td><td>${k.length==2?pc(p[k]):f(p[k])}</td></tr>`))}
+<p class="small m">Home ${s.H.gp} GP: ${f(s.H.gfpg)} GF / ${f(s.H.gapg)} GA · Road ${s.R.gp} GP: ${f(s.R.gfpg)} GF / ${f(s.R.gapg)} GA</p></div>
+<div class="card"><h3>Goalies</h3>${gq.order.map(g=>`<div>${pl(g.id,g.name)} <span class="m">${g.starts} GS · shrunk SV% ${f(g.sv,3)}</span>${g.out?` <span class="pill bk">${esc(g.inj.status)}</span>`:''}</div>`).join('')}<p class="small m">Starter-backup gap: ${gq.gap==null?'–':f(gq.gap,3)}</p></div>
+<div class="card"><h3>Next games</h3>${up.map(g=>`<div>${fmtD(g.date)} ${g.home===a?'vs':'@'} ${tm(g.home===a?g.away:g.home)} ${(g.home===a?g.hB2B:g.aB2B)?'<span class="pill b2b">B2B</span>':''}</div>`).join('')}<p><a href="#schedule" onclick="ls.set('steam','${a}')">Full schedule →</a></p></div></div>
+<div class="card"><h3>Roster</h3>${skTable(P.filter(x=>x.pos!=='G'))}</div>`}
+
+function skTable(P,which='cur'){return tbl(['Player','Pos','GP','G','A','P','+/-','SOG','PPP','TOI','CF%','FF%','WAR','Proj G','Proj P'],P.map(x=>{const c=x[which]||{},w=which==='cur'?x.war:x.warPrev;return `<tr>${td(pl(x.id,x.name)+(x.inj?' <span class="pill bk">'+esc(x.inj.status)+'</span>':'')+' <span class="m small">'+x.team+'</span>',x.name)}${td(x.pos)}${td(c.gp??0)}${td(c.g??0)}${td(c.a??0)}${td('<b>'+(c.p??0)+'</b>',c.p??0)}${td(c.pm??'–')}${td(c.s??0)}${td(c.ppp??0)}${td(f(c.toi,1))}${td(pc(c.cf),c.cf)}${td(pc(c.ff),c.ff)}${td(f(w?.war),w?.war??-99)}${td(f(x.proj?.G,1),x.proj?.G)}${td(f(x.proj?.P,1),x.proj?.P)}</tr>`}))}
+function players(){const q=ls.get('pq',''),t=ls.get('pt','ALL'),ps=ls.get('ppos','sk'),se=ls.get('pse','cur');const A=Object.keys(D.teams).sort();
+let P=D.players.filter(x=>(t==='ALL'||x.team===t)&&(!q||x.name.toLowerCase().includes(q.toLowerCase())));
+const G=ps==='G';P=P.filter(x=>G?x.pos==='G':ps==='D'?x.pos==='D':ps==='F'?(x.pos!=='D'&&x.pos!=='G'):x.pos!=='G');
+P.sort((a,b)=>G?((b[se]?.gp||0)-(a[se]?.gp||0)):((b[se]?.p||0)-(a[se]?.p||0)));
+return `<h2>Players</h2><div class="filters"><input placeholder="Search player" value="${esc(q)}" oninput="ls.set('pq',this.value);clearTimeout(window._t);window._t=setTimeout(()=>{route();const i=document.querySelector('input');i.focus();i.setSelectionRange(99,99)},250)">
+<select onchange="ls.set('pt',this.value);route()"><option value="ALL">All teams</option>${A.map(a=>`<option${a===t?' selected':''}>${a}</option>`).join('')}</select>
+<select onchange="ls.set('ppos',this.value);route()">${[['sk','Skaters'],['F','Forwards'],['D','Defense'],['G','Goalies']].map(([v,l])=>`<option value="${v}"${v===ps?' selected':''}>${l}</option>`).join('')}</select>
+<select onchange="ls.set('pse',this.value);route()"><option value="cur"${se==='cur'?' selected':''}>${D.model.season.toString().replace(/(\d{4})(\d{4})/,'$1-$2')}</option><option value="prev"${se==='prev'?' selected':''}>${D.model.prev.toString().replace(/(\d{4})(\d{4})/,'$1-$2')}</option></select></div>
+<div class="card">${G?gTable(P,se):skTable(P.slice(0,400),se)}<p class="small m">Click a column to sort. CF%/FF% are NHL on-ice 5v5 shot-attempt shares. Proj = season-end projection.</p></div>`}
+function gTable(P,se){return tbl(['Goalie','Team','GP','GS','W-L-OTL','GAA','SV%','SA','SO','GSAA','WAR'],P.map(x=>{const c=x[se]||{},w=se==='cur'?x.war:x.warPrev;return `<tr>${td(pl(x.id,x.name)+(x.inj?' <span class="pill bk">'+esc(x.inj.status)+'</span>':''),x.name)}${td(x.team)}${td(c.gp??0)}${td(c.gs??0)}${td(c.w!=null?`${c.w}-${c.l}-${c.otl}`:'–',c.w)}${td(f(c.gaa))}${td(f(c.sv,3))}${td(c.sa??0)}${td(c.so??0)}${td(f(w?.gsaa,1),w?.gsaa??-99)}${td(f(w?.war),w?.war??-99)}</tr>`}))}
+
+function war(){const se=ls.get('wse','prev');const k=se==='cur'?'war':'warPrev';const P=D.players.filter(x=>x[k]&&x[k].gp>0).sort((a,b)=>b[k].war-a[k].war);
+return `<h2>Wins Above Replacement (approx.)</h2><div class="filters"><select onchange="ls.set('wse',this.value);route()"><option value="cur"${se==='cur'?' selected':''}>This season</option><option value="prev"${se==='prev'?' selected':''}>Last season (full)</option></select> <a href="#method" class="pill">How it's built</a></div>
+<div class="card">${tbl(['Player','Team','Pos','GP','EV GAR','PP GAR','Poss GAR','GSAA (G)','GAR','WAR','WAR/82'],P.slice(0,300).map(x=>{const w=x[k];return `<tr>${td(pl(x.id,x.name),x.name)}${td(x.team)}${td(x.pos)}${td(w.gp)}${td(f(w.ev,1),w.ev??-99)}${td(f(w.pp,1),w.pp??-99)}${td(f(w.poss,1),w.poss??-99)}${td(f(w.gsaa,1),w.gsaa??-99)}${td(f(w.gar,1),w.gar)}${td('<b>'+f(w.war)+'</b>',w.war)}${td(x.pos==='G'?'–':f(w.war/w.gp*82),x.pos==='G'?-99:w.war/w.gp*82)}</tr>`}))}
+<p class="small m">An offense-weighted approximation built from public NHL box-score stats, not a clone of Evolving-Hockey or similar models. Magnitudes for top scorers run higher than those models because there's no defensive or penalty component beyond a shot-attempt proxy. Use it to rank players, not as a precise value. Early-season values are tiny samples.</p></div>`}
+
+function h2h(){const sc=ls.get('hsc','all'),up=ls.get('hup',true);let L=D.h2h.filter(x=>(sc==='all'||x.scope===sc)&&(!up||x.next));
+return `<h2>Legendary Head-to-Heads</h2><div class="filters"><select onchange="ls.set('hsc',this.value);route()">${[['all','Career + current team'],['career','Career'],['team','Since joining current team']].map(([v,l])=>`<option value="${v}"${v===sc?' selected':''}>${l}</option>`).join('')}</select>
+<label class="pill"><input type="checkbox" ${up?'checked':''} onchange="ls.set('hup',this.checked);route()"> Has upcoming game vs that team</label></div>
+<div class="card">${tbl(['Player','Team','Opp','Scope','Record','Expected','Chance by luck','Next meeting'],L.slice(0,400).map(x=>`<tr>${td(pl(x.pid,x.name),x.name)}${td(x.team)}${td(tm(x.opp),x.opp)}${td(x.scope==='team'?'Since joining '+x.team:'Career')}${td(`${x.val} ${x.stat} in ${x.n} GP`,x.val/x.n)}${td(f(x.exp,1)+' '+x.stat,x.exp)}${td(f(x.pv*100,2)+'%',x.pv)}${td(x.next?fmtD(x.next):'–',x.next||'9')}</tr>`))}
+<p class="small m">Flags appear when production vs one team is ≥1.4× his baseline for points (≥1.5× for goals). They need an adequate sample (8+ GP career, 4+ since joining his current team) and Poisson odds under 2% (5% for the current-team span) of happening by chance at his normal rate. Career covers every NHL regular-season game. Opponent codes are historical, so ATL and ARI appear separately.</p></div>`}
+
+function goalies(){const A=Object.keys(D.goalies).sort();return `<h2>Goalie Context</h2><div class="card"><p class="small m">The starter order uses this season's starts, plus last season's as a tiebreak. Injury status comes from ESPN. SV% is shrunk toward league average (${f(D.model.leagueSV,3)}) with 600 phantom shots, so tiny samples don't swing the projections.</p>
+${tbl(['Team','No. 1','SV%','GS','No. 2','SV%','GS','Gap','Injuries'],A.map(a=>{const o=D.goalies[a].order,g1=o[0]||{},g2=o[1]||{};const inj=o.filter(g=>g.inj).map(g=>`${esc(g.name)}: ${esc(g.inj.status)}`).join('; ');
+return `<tr>${td(tm(a),a)}${td(g1.id?pl(g1.id,g1.name):'–')}${td(f(g1.sv,3))}${td(g1.starts??'–')}${td(g2.id?pl(g2.id,g2.name):'–')}${td(f(g2.sv,3))}${td(g2.starts??'–')}${td(f(D.goalies[a].gap,3),D.goalies[a].gap??-1)}${td(inj?'<span class="r">'+inj+'</span>':'<span class="m">none listed</span>',inj)}</tr>`}))}</div>
+<div class="card"><h3>Projected starters, next slates</h3>${tbl(['Date','Team','Projected','SV%','Reason'],D.slate.goalies.map(g=>`<tr>${td(fmtD(g.date),g.date)}${td(g.team)}${td((g.gid_?pl(g.gid_,g.goalie):'–')+(g.backup?' <span class="pill bk">ALT</span>':''))}${td(f(g.sv,3))}<td class="l small">${esc(g.why)}</td></tr>`))}</div>`}
+
+function method(){const m=D.model,r=m.repl[m.prev]||{},rc=m.repl[m.season]||{};return `<h2>Methodology</h2>
+<div class="card"><h3>Data & refresh</h3><p>Every number comes from free public feeds: NHL's api-web.nhle.com (schedules, rosters, game logs, standings), api.nhle.com/stats (season stats, TOI, 5v5 shot attempts), and ESPN's NHL injury report. GitHub Actions does a full rebuild at about 7:00 AM and 11:30 PM ET and can also be run by hand. Past-season game logs are cached, and the current season is refetched every run.</p></div>
+<div class="card"><h3>WAR (Goals/Wins Above Replacement): approximation</h3>
+<p><b>Replacement level</b> is the per-60 production of skaters outside the top 416 forwards (13 per team) or top 224 defensemen (7 per team) by total ice time, with at least 5 GP. For goalies, it's the shots-weighted SV% of goalies outside the top 64 by shots faced, capped at league average −0.004.</p>
+<ul><li><b>EV offense GAR</b> = (EV goals + 0.5 × EV assists) − replacement rate × EV hours. Last season's replacement rates: F ${f(r.F_ev60,3)}/60, D ${f(r.D_ev60,3)}/60.</li>
+<li><b>PP GAR</b> = the same formula on the power play (replacement F ${f(r.F_pp60,3)}, D ${f(r.D_pp60,3)} per 60 PP).</li>
+<li><b>Possession/defense proxy</b> = (5v5 Corsi relative − replacement CF rel) × 110 attempts/60 × 5v5 hours × 0.045 goals/attempt × 50% credit.</li>
+<li><b>Goalies</b>: GAR = (SV% − replacement SV%) × shots against. GSAA (vs league average ${f(m.leagueSVprev,3)} last season) is shown separately. It isn't adjusted for shot quality (no xG), because computing xG from every play-by-play event isn't built yet.</li>
+<li><b>WAR = GAR ÷ ${m.goalsPerWin}</b> goals per win.</li></ul>
+<p class="m small">Not included: penalties drawn/taken, faceoffs, shot quality, and a real defensive model. This season's replacement rates: F EV ${f(rc.F_ev60,3)}, goalie SV ${f(rc.goalie_sv,3)}.</p></div>
+<div class="card"><h3>Game projections (Poisson model)</h3><ol>
+<li><b>Player base rate</b> = (this season + ${m.wPrev} × last season + ${m.kShrink} phantom games at 60% of the positional mean) ÷ games. This gives goals, points and shots per game. Positional means last season: F ${f(m.posmean.F.g,3)} G/gm, D ${f(m.posmean.D.g,3)} G/gm.</li>
+<li><b>Goal environment</b> = 60% opposing goalie factor ((1 − his shrunk SV%) ÷ (1 − league SV%), clamped 0.75–1.30) + 40% opponent GA/game factor. GA/game blends this season, 35% of last season, and 10 games of league average (${f(m.lgGA,2)}).</li>
+<li><b>Context</b>: home ×1.03, road ×0.97, own back-to-back ×0.94, opponent on a back-to-back ×1.04, and a PP adjustment scaled by the player's PP share of points against the opponent's PK% (league ${pc(m.lgPK)}).</li>
+<li>λ<sub>goals</sub> = rate × all factors, and P(score) = 1 − e<sup>−λ</sup>. Points use half the goal-environment swing. Shots use the opponent's shots-allowed factor, and P(3+ SOG) is a Poisson tail.</li>
+<li><b>Goalie</b>: the projected starter is the healthy goalie with the most starts. On the second night of a back-to-back, the No. 2 is projected. If ESPN lists the No. 1 as Out, IR or Day-To-Day, the next goalie is used. This is a heuristic, not a confirmed lineup.</li>
+<li><b>Season projection</b> = current totals + the sum of λ over every remaining game. It assumes the player stays healthy and in his role.</li></ol>
+<p class="small m">Legendary H2H flags appear as notes and do not change λ (H2H samples are noisy). Every probability is a model estimate, not a sportsbook line.</p></div>`}
+
+async function player(id){let p;try{p=await J(`data/players/${id}.json`)}catch(e){return '<div class="card">Player not found.</div>'}
+const G=p.pos==='G',c=p.cur||{};const h2=Object.entries(p.h2h||{}).sort((a,b)=>b[1].career[0]-a[1].career[0]);
+const nextOpps=new Set((p.projGames||[]).map(x=>x.opp));
+let h=`<div class="card hero"><img src="${p.head}" onerror="this.style.visibility='hidden'" alt=""><div><h2 style="margin:0">${esc(p.name)} <span class="m">#${p.num??''}</span></h2>
+<div class="m">${tm(p.team)} · ${p.pos} · ${p.age?p.age+' yrs':''} ${p.birth?'· '+esc(p.birth):''}</div>${p.inj?`<div class="r small">${esc(p.inj.status)}: ${esc(p.inj.note)}</div>`:''}
+${(p.legend||[]).map(l=>`<span class="pill leg">${esc(l)}</span>`).join('')}</div></div>`;
+if(!G){h+=`<div class="card"><h3>This season · projection</h3><div class="kv"><div>GP<b>${c.gp??0}</b></div><div>G<b>${c.g??0}</b></div><div>A<b>${c.a??0}</b></div><div>P<b>${c.p??0}</b></div><div>SOG<b>${c.s??0}</b></div><div>TOI<b>${f(c.toi,1)}</b></div><div>PP TOI<b>${f(c.pptoi,1)}</b></div><div>CF%<b>${pc(c.cf)}</b></div><div>WAR<b>${f(p.war?.war)}</b></div>
+<div>Proj G<b class="g">${f(p.proj?.G,1)}</b></div><div>Proj P<b class="g">${f(p.proj?.P,1)}</b></div><div>Proj SOG<b class="g">${f(p.proj?.S,0)}</b></div></div><p class="small m">Base rates: ${f(p.proj?.rG,3)} G, ${f(p.proj?.rP,3)} P, ${f(p.proj?.rS,2)} SOG per game (shrunk blend). ${p.proj?.note?esc(p.proj.note):''}</p></div>
+<div class="card"><h3>Upcoming games (model)</h3>${tbl(['Date','Opp','P(G)','P(Pt)','xSOG','P(3+ SOG)','Opp goalie','Why'],(p.projGames||[]).map(x=>`<tr>${td(fmtD(x.date),x.date)}${td((x.home?'vs ':'@ ')+tm(x.opp))}${td('<b>'+pc(x.pG)+'</b>',x.pG)}${td(pc(x.pP),x.pP)}${td(f(x.xs,1))}${td(pc(x.p3S),x.p3S)}${td(esc(x.goalie||'–')+(x.backup?' <span class="pill bk">ALT</span>':''))}<td class="l small" style="white-space:normal;min-width:220px">${(x.why||[]).map(esc).join(' · ')||'<span class="m">Neutral spot</span>'}</td></tr>`))}</div>
+<div class="card"><h3>Head-to-head by opponent</h3><p class="small m">Career baseline: ${f(p.base?.ppg,2)} P/GP, ${f(p.base?.gpg,2)} G/GP over ${p.base?.gp??0} GP${p.base?.since?`. With ${p.team} since ${p.base.since}: ${f(p.base.teamPpg,2)} P/GP over ${p.base.teamGp} GP`:''}. ★ = next opponents.</p>
+${tbl(['Opp','GP','G','A','P','P/GP','SOG',`GP (${p.team})`,`G (${p.team})`,`P (${p.team})`,`P/GP (${p.team})`,'Flag'],h2.map(([o,v])=>{const a=v.career,b=v.team;const rate=a[3]/a[0],rel=p.base?.ppg?rate/p.base.ppg:1;
+return `<tr>${td((nextOpps.has(o)?'★ ':'')+(D.teams[o]?tm(o):o),o)}${td(a[0])}${td(a[1])}${td(a[2])}${td(a[3])}${td(`<span class="${rel>1.3?'g':rel<.7?'r':''}">${f(rate)}</span>`,rate)}${td(a[4])}${td(b[0]||'–',b[0])}${td(b[0]?b[1]:'–',b[1])}${td(b[0]?b[3]:'–',b[3])}${td(b[0]?f(b[3]/b[0]):'–',b[0]?b[3]/b[0]:-1)}${td(v.flags?'<span class="pill leg">LEGENDARY</span>':'',v.flags?1:0)}</tr>`}))}</div>`}
+else{h+=`<div class="card"><h3>This season</h3><div class="kv"><div>GP<b>${c.gp??0}</b></div><div>GS<b>${c.gs??0}</b></div><div>Record<b>${c.w??0}-${c.l??0}-${c.otl??0}</b></div><div>GAA<b>${f(c.gaa)}</b></div><div>SV%<b>${f(c.sv,3)}</b></div><div>GSAA<b>${f(p.war?.gsaa,1)}</b></div><div>WAR<b>${f(p.war?.war)}</b></div></div></div>`}
+h+=`<div class="card"><h3>Career by season (NHL regular season)</h3>${G?tbl(['Season','Team','GP','GS','W','GAA','SV%','SO'],p.seasons.map(s=>`<tr>${td(String(s.season).replace(/(\d{4})(\d{2})\d{2}/,'$1-$2'),s.season)}${td(esc(s.team))}${td(s.gp)}${td(s.gs??'–')}${td(s.w??'–')}${td(f(s.gaa))}${td(f(s.sv,3))}${td(s.so??0)}</tr>`)):
+tbl(['Season','Team','GP','G','A','P','+/-','SOG','PPG','PPP','TOI'],p.seasons.map(s=>`<tr>${td(String(s.season).replace(/(\d{4})(\d{2})\d{2}/,'$1-$2'),s.season)}${td(esc(s.team))}${td(s.gp)}${td(s.g)}${td(s.a)}${td('<b>'+s.p+'</b>',s.p)}${td(s.pm)}${td(s.s)}${td(s.ppg)}${td(s.ppp)}${td(s.toi||'–')}</tr>`))}</div>`;
+const lg=[...(p.log||[])].reverse();h+=`<div class="card"><h3>Game log, this season</h3>${lg.length?(G?tbl(['Date','Opp','GS','SA','GA','SV%','Dec'],lg.map(r=>`<tr>${td(r[1])}${td((r[4]==='H'?'vs ':'@ ')+r[3])}${td(r[5])}${td(r[6])}${td(r[7])}${td(r[6]?f((r[6]-r[7])/r[6],3):'–')}${td(r[8]||'')}</tr>`)):
+tbl(['Date','Opp','G','A','P','SOG','PPP','TOI','+/-'],lg.map(r=>`<tr>${td(r[1])}${td((r[4]==='H'?'vs ':'@ ')+r[3])}${td(r[5])}${td(r[6])}${td(r[5]+r[6])}${td(r[7])}${td(r[8])}${td(Math.floor(r[9]/60)+':'+String(r[9]%60).padStart(2,'0'),r[9])}${td(r[10])}</tr>`))):'<span class="m">No games yet.</span>'}</div>`;
+return h}
+
+async function route(){const [v,arg]=(location.hash.slice(1)||'slate').split('/');document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+const el=$('#app');try{const html=v==='player'?await player(arg):v==='team'?team(arg):({slate,schedule,teams,players,war,h2h,goalies,method}[v]||slate)();el.innerHTML=html;sortable(el)}catch(e){console.error(e);el.innerHTML='<div class="card r">Something went wrong rendering this view.</div>'}
+if(v!==route._v)scrollTo(0,0);route._v=v}
+(async()=>{$('#nav').innerHTML=V.map(([k,l])=>`<a href="#${k}" data-v="${k}">${l}</a>`).join('');
+try{D.meta=await J('data/meta.json');$('#badge').textContent='Data updated '+D.meta.updatedET;
+const ks=['teams','games','players','slate','model','goalies'];const r=await Promise.all([...ks.map(k=>J(`data/${k}.json`)),J('data/h2h_flags.json')]);ks.forEach((k,i)=>D[k]=r[i]);D.h2h=r[ks.length];
+addEventListener('hashchange',route);route()}catch(e){console.error(e);$('#app').innerHTML='<div class="card r">Could not load data.</div>'}})();
+</script></body></html>

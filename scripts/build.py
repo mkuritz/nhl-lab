@@ -1,0 +1,465 @@
+#!/usr/bin/env python3
+"""NHL Lab data builder. Free public sources only:
+api-web.nhle.com, api.nhle.com/stats/rest, ESPN injuries. Writes data/*.json."""
+import json, os, math, time, datetime as dt, unicodedata, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from zoneinfo import ZoneInfo
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(ROOT, "data"); CACHE = os.path.join(DATA, "cache", "gl")
+os.makedirs(os.path.join(DATA, "players"), exist_ok=True); os.makedirs(CACHE, exist_ok=True)
+ET = ZoneInfo("America/New_York")
+NOW = dt.datetime.now(ET); TODAY = NOW.date()
+SEASON = 20262027 if TODAY >= dt.date(2026, 9, 1) else 20252026
+y0 = SEASON // 10000
+if TODAY >= dt.date(y0 + 1, 7, 1): SEASON = (y0 + 1) * 10000 + y0 + 2
+PREV = (SEASON // 10000 - 1) * 10000 + SEASON // 10000
+W = "https://api-web.nhle.com/v1"; S = "https://api.nhle.com/stats/rest/en"
+
+def get(url, tries=4):
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "nhl-lab/1.0"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read())
+        except Exception as e:
+            if i == tries - 1: print("FAIL", url, e); return None
+            time.sleep(1.5 * (i + 1))
+
+def pmap(fn, items, n=12):
+    with ThreadPoolExecutor(n) as ex: return list(ex.map(fn, items))
+
+def wj(name, obj):
+    with open(os.path.join(DATA, name), "w") as f: json.dump(obj, f, separators=(",", ":"))
+
+def r3(x, n=3): return None if x is None else round(x, n)
+def norm(s): return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower().replace(".", "").replace("-", " ").strip()
+def toi_s(t):
+    try: m, s = t.split(":"); return int(m) * 60 + int(s)
+    except Exception: return 0
+
+def stats(kind, report, season, extra=""):
+    exp = f"seasonId={season}%20and%20gameTypeId=2" + extra
+    d = get(f"{S}/{kind}/{report}?limit=-1&cayenneExp={exp}")
+    return {r["playerId" if kind != "team" else "teamId"]: r for r in (d or {}).get("data", [])}
+
+# ---------------- teams / standings ----------------
+st = get(f"{W}/standings/now")["standings"]
+TEAMS = {}
+for s in st:
+    ab = s["teamAbbrev"]["default"]
+    TEAMS[ab] = dict(abbrev=ab, name=s["teamName"]["default"], common=s["teamCommonName"]["default"],
+        logo=s["teamLogo"], conf=s["conferenceName"], div=s["divisionName"],
+        gp=s["gamesPlayed"], w=s["wins"], l=s["losses"], otl=s["otLosses"], pts=s["points"],
+        ptsPct=r3(s["pointPctg"]), gf=s["goalFor"], ga=s["goalAgainst"], diff=s["goalDifferential"],
+        rw=s.get("regulationWins"), streak=f'{s.get("streakCode","")}{s.get("streakCount","")}',
+        home=f'{s["homeWins"]}-{s["homeLosses"]}-{s["homeOtLosses"]}', road=f'{s["roadWins"]}-{s["roadLosses"]}-{s["roadOtLosses"]}',
+        l10=f'{s["l10Wins"]}-{s["l10Losses"]}-{s["l10OtLosses"]}', divRank=s["divisionSequence"], confRank=s["conferenceSequence"],
+        leagueRank=s["leagueSequence"], wildcard=s.get("wildcardSequence"))
+ABBRS = sorted(TEAMS)
+ID2AB = {}
+for season, key in ((SEASON, "cur"), (PREV, "prev")):
+    ts = stats("team", "summary", season)
+    for tid, r in ts.items():
+        ab = next((a for a in ABBRS if TEAMS[a]["name"] == r["teamFullName"]), None)
+        if not ab: continue
+        ID2AB[tid] = ab
+        TEAMS[ab][key] = dict(gp=r["gamesPlayed"], gfpg=r3(r["goalsForPerGame"], 2), gapg=r3(r["goalsAgainstPerGame"], 2),
+            sfpg=r3(r["shotsForPerGame"], 1), sapg=r3(r["shotsAgainstPerGame"], 1), pp=r3(r["powerPlayPct"]),
+            pk=r3(r["penaltyKillPct"]), fo=r3(r["faceoffWinPct"]))
+
+# ---------------- schedules ----------------
+def sched(ab): return ab, get(f"{W}/club-schedule-season/{ab}/{SEASON}")
+GAMES = {}
+for ab, d in pmap(sched, ABBRS):
+    for g in (d or {}).get("games", []):
+        if g["gameType"] != 2: continue
+        GAMES[g["id"]] = g
+games = []
+for g in sorted(GAMES.values(), key=lambda g: g["startTimeUTC"]):
+    a, h = g["awayTeam"], g["homeTeam"]
+    t = dt.datetime.fromisoformat(g["startTimeUTC"].replace("Z", "+00:00")).astimezone(ET)
+    fin = g["gameState"] in ("OFF", "FINAL")
+    games.append(dict(id=g["id"], date=t.date().isoformat(), time=t.strftime("%-I:%M %p"), away=a["abbrev"], home=h["abbrev"],
+        state=g["gameState"], venue=g.get("venue", {}).get("default"), as_=a.get("score") if fin or g["gameState"] in ("LIVE","CRIT") else None,
+        hs=h.get("score") if fin or g["gameState"] in ("LIVE","CRIT") else None,
+        end=(g.get("gameOutcome") or {}).get("lastPeriodType") if fin else None))
+# rest days / back-to-backs
+last = {}
+for g in games:
+    d = dt.date.fromisoformat(g["date"])
+    for side in ("away", "home"):
+        ab = g[side]; p = last.get(ab)
+        rest = (d - p).days - 1 if p else None
+        g[side[0] + "Rest"] = rest; g[side[0] + "B2B"] = rest == 0
+        last[ab] = d
+# team home/away splits from results
+for ab in ABBRS:
+    sp = {"H": [0, 0, 0], "R": [0, 0, 0]}
+    for g in games:
+        if g["hs"] is None or g["state"] not in ("OFF", "FINAL"): continue
+        if g["home"] == ab: k, gf, ga = "H", g["hs"], g["as_"]
+        elif g["away"] == ab: k, gf, ga = "R", g["as_"], g["hs"]
+        else: continue
+        sp[k][0] += 1; sp[k][1] += gf; sp[k][2] += ga
+    TEAMS[ab]["splits"] = {k: dict(gp=v[0], gfpg=r3(v[1] / v[0], 2) if v[0] else None, gapg=r3(v[2] / v[0], 2) if v[0] else None) for k, v in sp.items()}
+    TEAMS[ab]["b2b"] = sum(1 for g in games if (g["home"] == ab and g["hB2B"]) or (g["away"] == ab and g["aB2B"]))
+
+# ---------------- injuries (ESPN) ----------------
+inj = {}
+d = get("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/injuries") or {}
+name2ab = {TEAMS[a]["name"]: a for a in ABBRS}
+name2ab.update({"Montreal Canadiens": "MTL", "St. Louis Blues": "STL", "Utah Mammoth": "UTA"})
+for t in d.get("injuries", []):
+    ab = name2ab.get(t["displayName"]) or next((a for a in ABBRS if norm(TEAMS[a]["name"]) == norm(t["displayName"])), None)
+    for i in t.get("injuries", []):
+        nm = i["athlete"]["displayName"]
+        inj[(ab, norm(nm))] = dict(status=i.get("status"), note=i.get("shortComment"), date=(i.get("date") or "")[:10])
+
+# ---------------- rosters ----------------
+def roster(ab): return ab, get(f"{W}/roster/{ab}/current")
+PL = {}
+for ab, r in pmap(roster, ABBRS):
+    for grp in ("forwards", "defensemen", "goalies"):
+        for p in (r or {}).get(grp, []):
+            nm = f'{p["firstName"]["default"]} {p["lastName"]["default"]}'
+            PL[p["id"]] = dict(id=p["id"], name=nm, team=ab, pos=p["positionCode"], num=p.get("sweaterNumber"),
+                head=p.get("headshot"), shoots=p.get("shootsCatches"), inj=inj.get((ab, norm(nm))))
+print("players", len(PL))
+
+# ---------------- league stats tables ----------------
+def skater_tables(season):
+    out = {}
+    for rep in ("summary", "timeonice", "summaryshooting", "percentages", "powerplay", "realtime"):
+        for pid, r in stats("skater", rep, season).items(): out.setdefault(pid, {}).update(r)
+    return out
+SK = {SEASON: skater_tables(SEASON), PREV: skater_tables(PREV)}
+GO = {SEASON: stats("goalie", "summary", SEASON), PREV: stats("goalie", "summary", PREV)}
+
+# ---------------- landing + game logs (cached) ----------------
+def player_detail(pid):
+    land = get(f"{W}/player/{pid}/landing")
+    if not land: return pid, None, {}
+    seasons = sorted({s["season"] for s in land.get("seasonTotals", []) if s.get("leagueAbbrev") == "NHL" and s.get("gameTypeId") == 2})
+    cf = os.path.join(CACHE, f"{pid}.json")
+    cache = json.load(open(cf)) if os.path.exists(cf) else {}
+    for se in seasons:
+        k = str(se)
+        if k in cache and se not in (SEASON, PREV): continue
+        if k in cache and se == PREV and cache.get("_prevfinal"): continue
+        gl = get(f"{W}/player/{pid}/game-log/{se}/2")
+        if gl is None: continue
+        rows = []
+        for g in gl.get("gameLog", []):
+            if "shotsAgainst" in g:
+                rows.append([g["gameId"], g["gameDate"], g["teamAbbrev"], g["opponentAbbrev"], g["homeRoadFlag"],
+                    g.get("gamesStarted", 0), g.get("shotsAgainst", 0), g.get("goalsAgainst", 0), g.get("decision"), toi_s(g.get("toi", "0:00"))])
+            else:
+                rows.append([g["gameId"], g["gameDate"], g["teamAbbrev"], g["opponentAbbrev"], g["homeRoadFlag"],
+                    g.get("goals", 0), g.get("assists", 0), g.get("shots", 0), g.get("powerPlayPoints", 0), toi_s(g.get("toi", "0:00")), g.get("plusMinus", 0)])
+        cache[k] = rows
+        if se == PREV and TODAY.month >= 9: cache["_prevfinal"] = True
+    json.dump(cache, open(cf, "w"), separators=(",", ":"))
+    return pid, land, cache
+details = {pid: (land, cache) for pid, land, cache in pmap(player_detail, list(PL), 12)}
+
+# ---------------- league baselines ----------------
+def lg_sv(season):
+    sa = sum(r["shotsAgainst"] for r in GO[season].values()); ga = sum(r["goalsAgainst"] for r in GO[season].values())
+    return 1 - ga / sa if sa else 0.900
+LSV = {SEASON: lg_sv(SEASON), PREV: lg_sv(PREV)}
+def lg_gpg(key):
+    t = [TEAMS[a].get(key) for a in ABBRS if TEAMS[a].get(key)]
+    gp = sum(x["gp"] for x in t)
+    return (sum(x["gfpg"] * x["gp"] for x in t) / gp if gp else 3.0), (sum(x["sfpg"] * x["gp"] for x in t) / gp if gp else 28.5)
+LG = {"cur": lg_gpg("cur"), "prev": lg_gpg("prev")}
+
+# ---------------- WAR (GAR) ----------------
+GOALS_PER_WIN = 6.0
+def gar_season(season):
+    sk = SK[season]; res = {}
+    rows = [r for r in sk.values() if r.get("gamesPlayed", 0) >= 5]
+    def grp(r): return "D" if r.get("positionCode") == "D" else "F"
+    def per60(r, kind):
+        if kind == "ev":
+            t = r.get("evTimeOnIce", 0) / 3600
+            return t, (r.get("evGoals", 0) + 0.5 * (r.get("evPoints", 0) - r.get("evGoals", 0)))
+        t = r.get("ppTimeOnIce", 0) / 3600
+        return t, (r.get("ppGoals", 0) + 0.5 * (r.get("ppPoints", 0) - r.get("ppGoals", 0)))
+    repl = {}
+    for gname, cut in (("F", 13 * 32), ("D", 7 * 32)):
+        g = sorted([r for r in rows if grp(r) == gname], key=lambda r: -r.get("timeOnIce", 0))
+        rp = g[cut:] if len(g) > cut else g[int(len(g) * 0.75):]
+        for kind in ("ev", "pp"):
+            T = sum(per60(r, kind)[0] for r in rp); X = sum(per60(r, kind)[1] for r in rp)
+            repl[(gname, kind)] = X / T if T else 0
+        repl[(gname, "rel")] = sum(r.get("satRelative") or 0 for r in rp) / max(1, len(rp))
+    att_per60 = 110.0; g_per_att = 0.045
+    for r in sk.values():
+        gname = grp(r)
+        te, xe = per60(r, "ev"); tp, xp = per60(r, "pp")
+        ev = xe - repl[(gname, "ev")] * te
+        pp = xp - repl[(gname, "pp")] * tp
+        t5 = (r.get("timeOnIcePerGame5v5") or 0) * r.get("gamesPlayed", 0) / 3600
+        poss = ((r.get("satRelative") or 0) - repl[(gname, "rel")]) * att_per60 * t5 * g_per_att * 0.5
+        gar = ev + pp + poss
+        res[r["playerId"]] = dict(ev=r3(ev, 1), pp=r3(pp, 1), poss=r3(poss, 1), gar=r3(gar, 1), war=r3(gar / GOALS_PER_WIN, 2), gp=r.get("gamesPlayed"))
+    # goalies: replacement sv% = SA-weighted sv% of goalies outside top 64 by shots against (min 1 GP)
+    go = sorted(GO[season].values(), key=lambda r: -r["shotsAgainst"])
+    rp = go[64:] if len(go) > 70 else go[int(len(go) * 0.66):]
+    sa = sum(r["shotsAgainst"] for r in rp); ga = sum(r["goalsAgainst"] for r in rp)
+    rsv = 1 - ga / sa if sa else LSV[season] - 0.01
+    rsv = min(rsv, LSV[season] - 0.004)
+    for r in go:
+        gsaa = (r["savePct"] or 0) * r["shotsAgainst"] - LSV[season] * r["shotsAgainst"] if r["shotsAgainst"] else 0
+        gar = ((r["savePct"] or 0) - rsv) * r["shotsAgainst"]
+        res[r["playerId"]] = dict(gsaa=r3(gsaa, 1), gar=r3(gar, 1), war=r3(gar / GOALS_PER_WIN, 2), gp=r["gamesPlayed"])
+    return res, dict(F_ev60=r3(repl[("F", "ev")]), F_pp60=r3(repl[("F", "pp")]), D_ev60=r3(repl[("D", "ev")]), D_pp60=r3(repl[("D", "pp")]),
+                     F_rel=r3(repl[("F", "rel")]), D_rel=r3(repl[("D", "rel")]), goalie_sv=r3(rsv, 4), league_sv=r3(LSV[season], 4))
+WAR = {}; REPL = {}
+for se in (SEASON, PREV): WAR[se], REPL[se] = gar_season(se)
+
+# ---------------- goalie quality & projected starters ----------------
+def goalie_sv(pid):
+    c, p = GO[SEASON].get(pid), GO[PREV].get(pid)
+    sa = (c["shotsAgainst"] if c else 0) + 0.7 * (p["shotsAgainst"] if p else 0)
+    sv = (c["saves"] if c else 0) + 0.7 * (p["saves"] if p else 0)
+    k = 600
+    return (sv + LSV[SEASON] * k) / (sa + k) if True else None, sa
+INJ_OUT = ("Out", "Injured Reserve", "Day-To-Day", "Long Term Injured Reserve", "Suspension")
+team_goalies = {}
+for pid, p in PL.items():
+    if p["pos"] != "G": continue
+    cache = details.get(pid, (None, {}))[1]
+    cur = cache.get(str(SEASON), []); prev = cache.get(str(PREV), [])
+    starts_cur = [r for r in cur if r[5] and r[2] == p["team"]]
+    q, sa = goalie_sv(pid)
+    team_goalies.setdefault(p["team"], []).append(dict(id=pid, name=p["name"], sv=r3(q, 4), shots=round(sa),
+        starts=len(starts_cur), prevStarts=sum(1 for r in prev if r[5]),
+        last=max([r[1] for r in starts_cur], default=None), inj=p["inj"],
+        out=bool(p["inj"] and p["inj"]["status"] in INJ_OUT)))
+def team_starter_order(ab):
+    gs = team_goalies.get(ab, [])
+    return sorted(gs, key=lambda g: -(g["starts"] * 3 + g["prevStarts"] * 0.3 + g["shots"] / 1000))
+def project_goalie(ab, b2b):
+    order = team_starter_order(ab)
+    healthy = [g for g in order if not g["out"]]
+    if not healthy: return None, "No healthy goalie found on roster", False
+    st = healthy[0]; why = f'{st["name"]} has the most starts ({st["starts"]} this season)'
+    backup = False
+    if order and order[0]["out"]:
+        why = f'Usual No. 1 {order[0]["name"]} is listed {order[0]["inj"]["status"]} (ESPN) — next man {st["name"]} projected'; backup = True
+    elif b2b and len(healthy) > 1:
+        st = healthy[1]; backup = True
+        why = f'Second night of a back-to-back — teams usually rest the starter, so backup {st["name"]} is projected'
+    return st, why, backup
+
+# ---------------- skater rates ----------------
+POSMEAN = {}
+def rate_parts(pid):
+    c, p = SK[SEASON].get(pid, {}), SK[PREV].get(pid, {})
+    gpc, gpp = c.get("gamesPlayed", 0), p.get("gamesPlayed", 0)
+    return c, p, gpc, gpp
+for grp in ("F", "D"):
+    rows = [r for r in SK[PREV].values() if r.get("gamesPlayed", 0) >= 20 and (r.get("positionCode") == "D") == (grp == "D")]
+    gp = sum(r["gamesPlayed"] for r in rows) or 1
+    POSMEAN[grp] = dict(g=sum(r["goals"] for r in rows) / gp, p=sum(r["points"] for r in rows) / gp, s=sum(r["shots"] for r in rows) / gp,
+                        a=sum(r["assists"] for r in rows) / gp)
+K_SHRINK = 12; W_PREV = 0.6
+def skater_rates(pid, pos):
+    c, p, gpc, gpp = rate_parts(pid)
+    pm = POSMEAN["D" if pos == "D" else "F"]
+    den = gpc + W_PREV * gpp + K_SHRINK
+    f = lambda k, m: (c.get(k, 0) + W_PREV * p.get(k, 0) + K_SHRINK * m * 0.6) / den
+    ppshare = ((c.get("ppPoints", 0) + W_PREV * p.get("ppPoints", 0)) / max(1, c.get("points", 0) + W_PREV * p.get("points", 0)))
+    return dict(g=f("goals", pm["g"]), p=f("points", pm["p"]), s=f("shots", pm["s"]), a=f("assists", pm["a"]),
+                gp=gpc + gpp, ppshare=ppshare, toi=(c.get("timeOnIcePerGame") or p.get("timeOnIcePerGame") or 0))
+
+def team_factor(ab, key, lgv, kgames=10):
+    t = TEAMS[ab]; c = t.get("cur") or {}; p = t.get("prev") or {}
+    gc, gpv = c.get("gp", 0), p.get("gp", 0)
+    vc, vp = c.get(key), p.get(key)
+    num = (vc or 0) * gc + (vp or lgv) * min(gpv, 82) * 0.35 + lgv * kgames
+    den = gc + min(gpv, 82) * 0.35 + kgames
+    return (num / den) / lgv
+LGA = (LG["cur"][0] * 1 if (TEAMS[ABBRS[0]].get("cur") or {}).get("gp") else LG["prev"][0])
+LGA = (LG["cur"][0] + LG["prev"][0] * 2) / 3; LSA = (LG["cur"][1] + LG["prev"][1] * 2) / 3
+LPK = sum((TEAMS[a].get("prev") or {}).get("pk") or 0.79 for a in ABBRS) / 32
+
+# ---------------- H2H ----------------
+def pois_tail(k, lam):
+    if k <= 0: return 1.0
+    s = 0.0; term = math.exp(-lam)
+    for i in range(k): s += term; term *= lam / (i + 1)
+    return max(0.0, 1 - s)
+def h2h_for(pid, cache, cur_team):
+    rows = [r for k, v in cache.items() if not k.startswith("_") for r in v]
+    if not rows: return {}, {}
+    gp = len(rows); G = sum(r[5] for r in rows); P = sum(r[5] + r[6] for r in rows)
+    since_rows = []
+    for r in sorted(rows, key=lambda r: r[1], reverse=True):
+        if r[2] != cur_team: break
+        since_rows.append(r)
+    since_date = min((r[1] for r in since_rows), default=None)
+    out = {}
+    for scope, rs in (("career", rows), ("team", since_rows)):
+        for r in rs:
+            o = out.setdefault(r[3], {"career": [0, 0, 0, 0, 0], "team": [0, 0, 0, 0, 0]})[scope]
+            o[0] += 1; o[1] += r[5]; o[2] += r[6]; o[3] += r[5] + r[6]; o[4] += r[7]
+    base = dict(gp=gp, gpg=G / gp, ppg=P / gp, since=since_date)
+    tn = len(since_rows)
+    base["teamGp"] = tn
+    base["teamGpg"] = (sum(r[5] for r in since_rows) / tn) if tn else None
+    base["teamPpg"] = (sum(r[5] + r[6] for r in since_rows) / tn) if tn else None
+    whole = tn == gp  # entire career with current team -> team scope duplicates career
+    for opp, o in out.items():
+        flags = []
+        for scope, minN, label in (("career", 8, "career"), ("team", 4, f"since joining {cur_team}")):
+            n, g, a, p, s = o[scope]
+            if n < minN or (scope == "team" and whole): continue
+            bp = base["ppg"] if scope == "career" else 0.5 * base["ppg"] + 0.5 * base["teamPpg"]
+            bg = base["gpg"] if scope == "career" else 0.5 * base["gpg"] + 0.5 * base["teamGpg"]
+            lamP, lamG = bp * n, bg * n
+            if p >= 4 and p / n >= 1.4 * bp and pois_tail(p, lamP) < (0.02 if scope == "career" else 0.05):
+                flags.append(dict(scope=scope, stat="P", n=n, val=p, exp=round(lamP, 1), pv=r3(pois_tail(p, lamP), 4), label=f"{p} PTS in {n} GP {label} vs {opp} ({p/n:.2f}/gm vs {bp:.2f} baseline)"))
+            if g >= 3 and g / n >= 1.5 * bg and pois_tail(g, lamG) < (0.02 if scope == "career" else 0.05):
+                flags.append(dict(scope=scope, stat="G", n=n, val=g, exp=round(lamG, 1), pv=r3(pois_tail(g, lamG), 4), label=f"{g} G in {n} GP {label} vs {opp} ({g/n:.2f}/gm vs {bg:.2f} baseline)"))
+        if flags: o["flags"] = flags
+    return out, base
+
+# ---------------- projections ----------------
+upcoming = [g for g in games if g["state"] in ("FUT", "PRE") and g["date"] >= TODAY.isoformat()]
+slate_days = sorted({g["date"] for g in upcoming})[:3]
+goalie_proj = {}
+for g in upcoming:
+    if g["date"] not in slate_days: continue
+    for side, opp in (("home", "away"), ("away", "home")):
+        st, why, backup = project_goalie(g[side], g[side[0] + "B2B"])
+        goalie_proj[(g["id"], g[side])] = (st, why, backup)
+def goalie_for(gid, ab, b2b):
+    if (gid, ab) in goalie_proj: return goalie_proj[(gid, ab)]
+    order = [x for x in team_starter_order(ab) if not x["out"]]
+    return (order[0] if order else None), "season-long: assumes usual starter", False
+
+H2H = {}; BASE = {}
+for pid, p in PL.items():
+    if p["pos"] == "G": continue
+    land, cache = details.get(pid, (None, {}))
+    H2H[pid], BASE[pid] = h2h_for(pid, cache or {}, p["team"])
+
+def project(pid, p, g, rates, detail=True):
+    home = g["home"] == p["team"]; opp = g["away"] if home else g["home"]
+    side = "h" if home else "a"; oside = "a" if home else "h"
+    fac = {}; why = []
+    ga_f = team_factor(opp, "gapg", LGA); fac["oppGA"] = ga_f
+    sa_f = team_factor(opp, "sapg", LSA); fac["oppSA"] = sa_f
+    gl, gwhy, backup = goalie_for(g["id"], opp, g[oside + "B2B"])
+    gsv = gl["sv"] if gl else LSV[SEASON]
+    g_f = max(0.75, min(1.3, (1 - gsv) / (1 - LSV[SEASON])))
+    # opp GA already includes their goalies; weight goalie-specific 60%, team GA 40%
+    goal_env = 0.6 * g_f + 0.4 * ga_f
+    ha = 1.03 if home else 0.97
+    b2b = 0.94 if g[side + "B2B"] else 1.0
+    ob2b = 1.04 if g[oside + "B2B"] else 1.0
+    opk = (TEAMS[opp].get("cur") or TEAMS[opp].get("prev") or {}).get("pk") or LPK
+    pk_f = 1 + rates["ppshare"] * (((1 - opk) / (1 - LPK)) - 1) * 0.5
+    m = goal_env * ha * b2b * ob2b * pk_f
+    lg_, lp_, ls_ = rates["g"] * m, rates["p"] * (0.5 + 0.5 * m), rates["s"] * sa_f * ha * b2b
+    out = dict(gid=g["id"], date=g["date"], opp=opp, home=home, xg=r3(lg_), xp=r3(lp_), xs=r3(ls_, 2),
+               pG=r3(1 - math.exp(-lg_)), pP=r3(1 - math.exp(-lp_)),
+               p3S=r3(pois_tail(3, ls_)), goalie=gl["name"] if gl else None, gsv=r3(gsv, 3), backup=backup)
+    if not detail: return out
+    if gl:
+        if backup: why.append(f"Opp goalie: {gwhy} ({gsv:.3f} shrunk SV%)")
+        elif g_f > 1.05: why.append(f"Faces {gl['name']} ({gsv:.3f} SV%, below league {LSV[SEASON]:.3f})")
+        elif g_f < 0.95: why.append(f"Tough goalie: {gl['name']} ({gsv:.3f} SV%)")
+    if ga_f > 1.08: why.append(f"{opp} allows {ga_f*LGA:.2f} GA/gm (blended) vs league {LGA:.2f}")
+    if ga_f < 0.92: why.append(f"{opp} is stingy: {ga_f*LGA:.2f} GA/gm blended")
+    if sa_f > 1.06: why.append(f"{opp} allows a lot of shots ({sa_f*LSA:.1f}/gm)")
+    if g[oside + "B2B"]: why.append(f"{opp} on 2nd night of a back-to-back")
+    if g[side + "B2B"]: why.append(f"{p['team']} on 2nd night of a back-to-back (-6%)")
+    if pk_f > 1.03: why.append(f"PP-heavy producer vs weak {opp} PK ({opk:.1%})")
+    h = (H2H.get(pid) or {}).get(opp)
+    if h and h.get("flags"): out["legend"] = [f["label"] for f in h["flags"]]; why.append("LEGENDARY H2H: " + h["flags"][0]["label"])
+    out["why"] = why; out["m"] = r3(m)
+    return out
+
+proj_by_player = {}; slate = []
+season_proj = {}
+for pid, p in PL.items():
+    if p["pos"] == "G": continue
+    rates = skater_rates(pid, p["pos"])
+    if rates["gp"] == 0: continue
+    if p["inj"] and p["inj"]["status"] in ("Out", "Injured Reserve", "Long Term Injured Reserve"):
+        out_flag = True
+    else: out_flag = False
+    tg = [g for g in upcoming if p["team"] in (g["home"], g["away"])]
+    xs = [project(pid, p, g, rates, detail=(i < 10)) for i, g in enumerate(tg)]
+    c = SK[SEASON].get(pid, {})
+    season_proj[pid] = dict(G=round(c.get("goals", 0) + sum(x["xg"] for x in xs), 1), P=round(c.get("points", 0) + sum(x["xp"] for x in xs), 1),
+                            S=round(c.get("shots", 0) + sum(x["xs"] for x in xs)), rem=len(xs),
+                            rG=r3(rates["g"]), rP=r3(rates["p"]), rS=r3(rates["s"], 2), note="assumes full health; injured players shown but not discounted" if out_flag else None)
+    proj_by_player[pid] = xs[:10]
+    for x in xs:
+        if x["date"] in slate_days[:2] and not out_flag and rates["toi"] > 600:
+            slate.append(dict(pid=pid, name=p["name"], team=p["team"], pos=p["pos"], **{k: x[k] for k in ("gid", "date", "opp", "home", "pG", "pP", "xs", "p3S", "goalie", "backup", "why")}, legend=x.get("legend")))
+slate.sort(key=lambda r: -r["pG"])
+
+# ---------------- write per-player files + index ----------------
+def season_row(s): return dict(season=s["season"], gp=s.get("gamesPlayed"), g=s.get("goals"), a=s.get("assists"), p=s.get("points"),
+    pm=s.get("plusMinus"), s=s.get("shots"), ppg=s.get("powerPlayGoals"), ppp=s.get("powerPlayPoints"), toi=s.get("avgToi"),
+    team=(s.get("teamName") or {}).get("default"), w=s.get("wins"), gaa=r3(s.get("goalsAgainstAvg"), 2), sv=r3(s.get("savePctg"), 3),
+    so=s.get("shutouts"), gs=s.get("gamesStarted"))
+index = []
+for pid, p in PL.items():
+    land, cache = details.get(pid, (None, {}))
+    c, pv = SK[SEASON].get(pid) or GO[SEASON].get(pid) or {}, SK[PREV].get(pid) or GO[PREV].get(pid) or {}
+    def pack(r, isg):
+        if not r: return None
+        if isg: return dict(gp=r["gamesPlayed"], gs=r.get("gamesStarted"), w=r["wins"], l=r["losses"], otl=r.get("otLosses"), gaa=r3(r["goalsAgainstAverage"], 2),
+                             sv=r3(r["savePct"], 3), sa=r["shotsAgainst"], ga=r["goalsAgainst"], so=r["shutouts"])
+        return dict(gp=r["gamesPlayed"], g=r["goals"], a=r["assists"], p=r["points"], pm=r["plusMinus"], s=r["shots"], ppg=r["ppGoals"], ppp=r["ppPoints"],
+                    toi=r3((r.get("timeOnIcePerGame") or 0) / 60, 1), pptoi=r3((r.get("ppTimeOnIcePerGame") or 0) / 60, 1),
+                    cf=r3(r.get("satPercentage")), ff=r3(r.get("usatPercentage")), cfrel=r3(r.get("satRelative")), hits=r.get("hits"), blk=r.get("blockedShots"),
+                    shp=r3(r.get("shootingPct")), fo=r3(r.get("faceoffWinPct")))
+    isg = p["pos"] == "G"
+    row = dict(p, cur=pack(c, isg), prev=pack(pv, isg), war=WAR[SEASON].get(pid), warPrev=WAR[PREV].get(pid),
+               proj=season_proj.get(pid), next=(proj_by_player.get(pid) or [None])[0])
+    h = H2H.get(pid) or {}
+    row["legend"] = sorted([f["label"] for o in h.values() for f in o.get("flags", [])])[:6]
+    if land:
+        row["age"] = (TODAY - dt.date.fromisoformat(land["birthDate"])).days // 365 if land.get("birthDate") else None
+        ct = land.get("careerTotals", {}).get("regularSeason", {})
+        row["career"] = dict(gp=ct.get("gamesPlayed"), g=ct.get("goals"), a=ct.get("assists"), p=ct.get("points"), w=ct.get("wins"), sv=r3(ct.get("savePctg"), 3), gaa=r3(ct.get("goalsAgainstAvg"), 2))
+    index.append(row)
+    full = dict(row, seasons=[season_row(s) for s in (land or {}).get("seasonTotals", []) if s.get("leagueAbbrev") == "NHL" and s.get("gameTypeId") == 2],
+                log=(cache or {}).get(str(SEASON), []), logPrev=(cache or {}).get(str(PREV), []),
+                h2h=h, base=BASE.get(pid), projGames=proj_by_player.get(pid, []),
+                draft=(land or {}).get("draftDetails"), birth=(land or {}).get("birthCity", {}).get("default") if land else None)
+    with open(os.path.join(DATA, "players", f"{pid}.json"), "w") as f: json.dump(full, f, separators=(",", ":"))
+
+legends = []
+for pid, h in H2H.items():
+    for opp, o in h.items():
+        for f in o.get("flags", []):
+            nxt = next((g for g in upcoming if {g["home"], g["away"]} == {PL[pid]["team"], opp}), None)
+            legends.append(dict(pid=pid, name=PL[pid]["name"], team=PL[pid]["team"], opp=opp, **f, next=nxt["date"] if nxt else None))
+legends.sort(key=lambda x: (x["next"] is None, x["next"] or "", x["pv"]))
+
+goalies = {}
+for ab in ABBRS:
+    order = team_starter_order(ab)
+    if len(order) >= 2: gap = r3(order[0]["sv"] - order[1]["sv"], 3)
+    else: gap = None
+    goalies[ab] = dict(order=order, gap=gap)
+gproj = [dict(gid=gid, team=ab, goalie=st["name"] if st else None, gid_=st["id"] if st else None, sv=st["sv"] if st else None, why=why, backup=backup,
+              date=next(g["date"] for g in upcoming if g["id"] == gid)) for (gid, ab), (st, why, backup) in goalie_proj.items()]
+
+wj("teams.json", TEAMS); wj("games.json", games); wj("players.json", index)
+wj("slate.json", dict(days=slate_days[:2], rows=slate[:300], goalies=gproj))
+wj("h2h_flags.json", legends); wj("goalies.json", goalies)
+wj("model.json", dict(season=SEASON, prev=PREV, leagueSV=r3(LSV[SEASON], 4), leagueSVprev=r3(LSV[PREV], 4), lgGA=r3(LGA, 3), lgSA=r3(LSA, 2), lgPK=r3(LPK, 3),
+    repl={str(k): v for k, v in REPL.items()}, posmean=POSMEAN, goalsPerWin=GOALS_PER_WIN, kShrink=K_SHRINK, wPrev=W_PREV))
+wj("meta.json", dict(updated=NOW.isoformat(timespec="minutes"), updatedET=NOW.strftime("%b %-d, %-I:%M %p ET"), season=SEASON,
+    counts=dict(players=len(index), games=len(games), played=sum(1 for g in games if g["state"] in ("OFF", "FINAL")), slate=len(slate), legends=len(legends), injuries=len(inj))))
+print("done", len(index), "players", len(games), "games", len(legends), "legend flags", len(slate), "slate rows")
