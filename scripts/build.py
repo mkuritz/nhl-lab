@@ -14,6 +14,7 @@ SEASON = 20262027 if TODAY >= dt.date(2026, 9, 1) else 20252026
 y0 = SEASON // 10000
 if TODAY >= dt.date(y0 + 1, 7, 1): SEASON = (y0 + 1) * 10000 + y0 + 2
 PREV = (SEASON // 10000 - 1) * 10000 + SEASON // 10000
+TARGET = {t for t in os.environ.get("TARGET_TEAMS", "").replace("+", ",").split(",") if t}  # pre-game targeted mode
 W = "https://api-web.nhle.com/v1"; S = "https://api.nhle.com/stats/rest/en"
 
 def get(url, tries=4):
@@ -137,12 +138,18 @@ SK = {SEASON: skater_tables(SEASON), PREV: skater_tables(PREV)}
 GO = {SEASON: stats("goalie", "summary", SEASON), PREV: stats("goalie", "summary", PREV)}
 
 # ---------------- landing + game logs (cached) ----------------
+def slim(land):
+    return {k: land.get(k) for k in ("birthDate", "careerTotals", "draftDetails", "birthCity")} | {
+        "seasonTotals": [s for s in land.get("seasonTotals", []) if s.get("leagueAbbrev") == "NHL" and s.get("gameTypeId") == 2]}
 def player_detail(pid):
-    land = get(f"{W}/player/{pid}/landing")
-    if not land: return pid, None, {}
-    seasons = sorted({s["season"] for s in land.get("seasonTotals", []) if s.get("leagueAbbrev") == "NHL" and s.get("gameTypeId") == 2})
     cf = os.path.join(CACHE, f"{pid}.json")
     cache = json.load(open(cf)) if os.path.exists(cf) else {}
+    if TARGET and PL[pid]["team"] not in TARGET and cache.get("_land"):
+        return pid, cache["_land"], cache   # targeted run: reuse cached data for teams not playing soon
+    land = get(f"{W}/player/{pid}/landing")
+    if not land: return pid, cache.get("_land"), cache
+    land = slim(land); cache["_land"] = land
+    seasons = sorted({s["season"] for s in land.get("seasonTotals", []) if s.get("leagueAbbrev") == "NHL" and s.get("gameTypeId") == 2})
     for se in seasons:
         k = str(se)
         if k in cache and se not in (SEASON, PREV): continue
@@ -429,7 +436,7 @@ for pid, p in PL.items():
     row["legend"] = sorted([f["label"] for o in h.values() for f in o.get("flags", [])])[:6]
     if land:
         row["age"] = (TODAY - dt.date.fromisoformat(land["birthDate"])).days // 365 if land.get("birthDate") else None
-        ct = land.get("careerTotals", {}).get("regularSeason", {})
+        ct = (land.get("careerTotals") or {}).get("regularSeason") or {}
         row["career"] = dict(gp=ct.get("gamesPlayed"), g=ct.get("goals"), a=ct.get("assists"), p=ct.get("points"), w=ct.get("wins"), sv=r3(ct.get("savePctg"), 3), gaa=r3(ct.get("goalsAgainstAvg"), 2))
     index.append(row)
     full = dict(row, seasons=[season_row(s) for s in (land or {}).get("seasonTotals", []) if s.get("leagueAbbrev") == "NHL" and s.get("gameTypeId") == 2],
@@ -579,11 +586,13 @@ for (ab, nm), v in inj.items():
         team_inj[ab].append(dict(v, name=next((p["name"] for p in PL.values() if p["team"] == ab and norm(p["name"]) == nm), nm.title()), pid=pid))
 wj("hot.json", hot[:600]); wj("grades.json", dict(grades=grades, sos=sos)); wj("teamx.json", dict(sim=sim, usage=usage, inj=team_inj, sims=N))
 
+wj("schedule.json", [dict(id=g["id"], start=GAMES[g["id"]]["startTimeUTC"], away=g["away"], home=g["home"]) for g in games
+    if g["state"] in ("FUT", "PRE") and g["date"] <= (TODAY + dt.timedelta(days=3)).isoformat()])
 wj("teams.json", TEAMS); wj("games.json", games); wj("players.json", index)
 wj("slate.json", dict(days=slate_days[:2], rows=slate[:300], goalies=gproj))
 wj("h2h_flags.json", legends); wj("goalies.json", goalies)
 wj("model.json", dict(season=SEASON, prev=PREV, leagueSV=r3(LSV[SEASON], 4), leagueSVprev=r3(LSV[PREV], 4), lgGA=r3(LGA, 3), lgSA=r3(LSA, 2), lgPK=r3(LPK, 3),
     repl={str(k): v for k, v in REPL.items()}, posmean=POSMEAN, goalsPerWin=GOALS_PER_WIN, kShrink=K_SHRINK, wPrev=W_PREV))
-wj("meta.json", dict(updated=NOW.isoformat(timespec="minutes"), updatedET=NOW.strftime("%b %-d, %-I:%M %p ET"), season=SEASON,
+wj("meta.json", dict(mode=("pregame:" + ",".join(sorted(TARGET))) if TARGET else "full", updated=NOW.isoformat(timespec="minutes"), updatedET=NOW.strftime("%b %-d, %-I:%M %p ET"), season=SEASON,
     counts=dict(players=len(index), games=len(games), played=sum(1 for g in games if g["state"] in ("OFF", "FINAL")), slate=len(slate), legends=len(legends), injuries=len(inj))))
 print("done", len(index), "players", len(games), "games", len(legends), "legend flags", len(slate), "slate rows")

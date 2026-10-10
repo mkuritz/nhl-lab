@@ -4,4 +4,4 @@ Full-season NHL suite: schedules (rest/back-to-backs), skater + goalie stats, te
 
 Live: https://mkuritz.github.io/nhl-lab/
 
-Data: free public feeds only — api-web.nhle.com, api.nhle.com/stats/rest, ESPN NHL injuries. `scripts/build.py` writes `data/*.json`; GitHub Actions rebuilds ~7:00 AM and ~11:30 PM ET (and on demand). Past-season game logs cached in `data/cache/gl/`. Methodology is in the app (Methodology tab). All probabilities are model estimates, not sportsbook odds.
+Data: free public feeds only (api-web.nhle.com, api.nhle.com/stats/rest, ESPN injuries). Refresh is event-driven: full rebuild ~2:30 AM and ~7:00 AM ET, plus targeted rebuilds ~90 and ~30 min before each game (scripts/dispatch.py, every 15 min). Methodology is in the app. All probabilities are model estimates, not sportsbook odds.
