@@ -111,7 +111,7 @@ return `<h2>Wins Above Replacement (approx.)</h2><div class="filters"><select on
 
 var KL={legendary:['LEGENDARY','leg'],venue:['VENUE CRUSHER','b2b'],heating:['HEATING UP','']};
 function h2h(){const k=ls.get('hk','all'),up=ls.get('hup',true);let L=D.h2h.filter(x=>(k==='all'||x.kind===k)&&(!up||x.next));
-L.sort((x,y)=>({legendary:0,venue:1,heating:2}[x.kind]-{legendary:0,venue:1,heating:2}[y.kind])||(x.pv-y.pv));
+const KO={legendary:0,venue:1,heating:2};L.sort((x,y)=>((x.next||'9999')<(y.next||'9999')?-1:(x.next||'9999')>(y.next||'9999')?1:0)||(KO[x.kind]-KO[y.kind])||(x.pv-y.pv));
 return `<h2>Head-to-Head Flags</h2><div class="filters"><select onchange="ls.set('hk',this.value);route()">${[['all','All flags'],['legendary','Legendary (elite)'],['venue','Venue crushers'],['heating','Heating up (recent)']].map(([v,l])=>`<option value="${v}"${v===k?' selected':''}>${l}</option>`).join('')}</select>
 <label class="pill"><input type="checkbox" ${up?'checked':''} onchange="ls.set('hup',this.checked);route()"> Has upcoming game vs that team</label></div>
 <div class="card">${tbl(['Flag','Player','Team','Opp','Actual results','His baseline','How rare','Next meeting'],L.slice(0,300).map(x=>`<tr>${td(`<span class="pill ${KL[x.kind][1]}">${KL[x.kind][0]}</span>`,x.kind)}${td(pl(x.pid,x.name),x.name)}${td(x.team)}${td(tm(x.opp),x.opp)}<td class="l" style="white-space:normal;min-width:260px">${esc(x.label)}</td>${td(f(x.base,2)+(x.stat==='G'?' G/gm':' P/gm'),x.base)}${td(esc(x.rare),x.pv)}${td(x.next?fmtD(x.next)+(x.kind==='venue'&&x.nextVenueMatch===false?' <span class="m small">(other venue)</span>':''):'–',x.next||'9')}</tr>`))}
