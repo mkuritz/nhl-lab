@@ -7,6 +7,13 @@ name: Refresh NHL data
 on:
   schedule:
     - cron: "*/15 * * * *"
+    # Dedicated anchors for the full-refresh windows. GitHub heavily throttles */15 schedules,
+    # so these make sure the overnight (2:30-5:30 AM ET) and morning (7-10 AM ET) windows get hit.
+    # Times are UTC and fall inside both windows in EDT and EST; the dispatcher dedupes each window.
+    - cron: "37 7 * * *"
+    - cron: "52 8 * * *"
+    - cron: "7 12 * * *"
+    - cron: "22 13 * * *"
   workflow_dispatch:
 
 permissions:
