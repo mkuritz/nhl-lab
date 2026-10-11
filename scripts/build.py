@@ -299,6 +299,11 @@ def pois_tail(k, lam):
     s = 0.0; term = math.exp(-lam)
     for i in range(k): s += term; term *= lam / (i + 1)
     return max(0.0, 1 - s)
+def rarity(pv):
+    if pv is None: return ""
+    if pv <= 0: return "rarer than 1-in-10,000 by luck"
+    n = 1 / pv
+    return f"about 1-in-{n:,.0f} by luck" if n < 10000 else "rarer than 1-in-10,000 by luck"
 def h2h_for(pid, cache, cur_team):
     rows = [r for k, v in cache.items() if not k.startswith("_") for r in v]
     if not rows: return {}, {}
@@ -309,28 +314,58 @@ def h2h_for(pid, cache, cur_team):
         since_rows.append(r)
     since_date = min((r[1] for r in since_rows), default=None)
     out = {}
+    def blank(): return [0, 0, 0, 0, 0]
     for scope, rs in (("career", rows), ("team", since_rows)):
         for r in rs:
-            o = out.setdefault(r[3], {"career": [0, 0, 0, 0, 0], "team": [0, 0, 0, 0, 0]})[scope]
-            o[0] += 1; o[1] += r[5]; o[2] += r[6]; o[3] += r[5] + r[6]; o[4] += r[7]
+            o = out.setdefault(r[3], {"career": blank(), "team": blank(), "home": blank(), "road": blank(), "trail": []})
+            for k in ((scope,) if scope == "team" else ("career", "home" if r[4] == "H" else "road")):
+                x = o[k]; x[0] += 1; x[1] += r[5]; x[2] += r[6]; x[3] += r[5] + r[6]; x[4] += r[7]
+            if scope == "career": o["trail"].append([r[1], r[4], r[5], r[6], r[7], r[2]])
     base = dict(gp=gp, gpg=G / gp, ppg=P / gp, since=since_date)
     tn = len(since_rows)
     base["teamGp"] = tn
     base["teamGpg"] = (sum(r[5] for r in since_rows) / tn) if tn else None
     base["teamPpg"] = (sum(r[5] + r[6] for r in since_rows) / tn) if tn else None
-    whole = tn == gp  # entire career with current team -> team scope duplicates career
+    whole = tn == gp
+    # career home/road baselines (venue flags compare like with like)
+    hb = [r for r in rows if r[4] == "H"]; rb = [r for r in rows if r[4] != "H"]
+    vb = {"home": (sum(r[5] + r[6] for r in hb) / max(1, len(hb)), sum(r[5] for r in hb) / max(1, len(hb))),
+          "road": (sum(r[5] + r[6] for r in rb) / max(1, len(rb)), sum(r[5] for r in rb) / max(1, len(rb)))}
     for opp, o in out.items():
+        o["trail"] = sorted(o["trail"], reverse=True)[:6]
         flags = []
-        for scope, minN, label in (("career", 8, "career"), ("team", 4, f"since joining {cur_team}")):
-            n, g, a, p, s = o[scope]
+        # LEGENDARY: strict rate multiple + rarity (<= 1-in-500) + real sample
+        for scope, minN, label in (("career", 12, "career"), ("team", 8, f"since joining {cur_team}")):
+            n, g, a, p, sh = o[scope]
             if n < minN or (scope == "team" and whole): continue
             bp = base["ppg"] if scope == "career" else 0.5 * base["ppg"] + 0.5 * base["teamPpg"]
             bg = base["gpg"] if scope == "career" else 0.5 * base["gpg"] + 0.5 * base["teamGpg"]
-            lamP, lamG = bp * n, bg * n
-            if p >= 4 and p / n >= 1.4 * bp and pois_tail(p, lamP) < (0.02 if scope == "career" else 0.05):
-                flags.append(dict(scope=scope, stat="P", n=n, val=p, exp=round(lamP, 1), pv=r3(pois_tail(p, lamP), 4), label=f"{p} PTS in {n} GP {label} vs {opp} ({p/n:.2f}/gm vs {bp:.2f} baseline)"))
-            if g >= 3 and g / n >= 1.5 * bg and pois_tail(g, lamG) < (0.02 if scope == "career" else 0.05):
-                flags.append(dict(scope=scope, stat="G", n=n, val=g, exp=round(lamG, 1), pv=r3(pois_tail(g, lamG), 4), label=f"{g} G in {n} GP {label} vs {opp} ({g/n:.2f}/gm vs {bg:.2f} baseline)"))
+            pvP, pvG = pois_tail(p, bp * n), pois_tail(g, bg * n)
+            if p >= 10 and p / n >= 1.6 * bp and p / n >= 0.75 and pvP < 0.002:
+                flags.append(dict(kind="legendary", scope=scope, stat="P", n=n, val=p, rate=r3(p / n, 2), base=r3(bp, 2), pv=pvP,
+                                  label=f"{p} PTS in {n} GP {label} vs {opp} ({p/n:.2f}/gm vs his {bp:.2f})"))
+            if g >= 7 and g / n >= 1.75 * bg and g / n >= 0.35 and pvG < 0.002:
+                flags.append(dict(kind="legendary", scope=scope, stat="G", n=n, val=g, rate=r3(g / n, 2), base=r3(bg, 2), pv=pvG,
+                                  label=f"{g} G in {n} GP {label} vs {opp} ({g/n:.2f}/gm vs his {bg:.2f})"))
+        # VENUE crusher: home vs opp, or at opp's arena
+        for v, where in (("home", f"at home vs {opp}"), ("road", f"at {opp}")):
+            n, g, a, p, sh = o[v]; bpv, bgv = vb[v]
+            if n < 8: continue
+            pvP, pvG = pois_tail(p, bpv * n), pois_tail(g, bgv * n)
+            if p >= 8 and p / n >= 1.7 * bpv and pvP < 0.005:
+                flags.append(dict(kind="venue", scope=v, stat="P", n=n, val=p, rate=r3(p / n, 2), base=r3(bpv, 2), pv=pvP,
+                                  label=f"{p} PTS in {n} GP {where} ({p/n:.2f}/gm vs his {bpv:.2f} {v} rate)"))
+            elif g >= 5 and g / n >= 1.8 * bgv and pvG < 0.005:
+                flags.append(dict(kind="venue", scope=v, stat="G", n=n, val=g, rate=r3(g / n, 2), base=r3(bgv, 2), pv=pvG,
+                                  label=f"{g} G in {n} GP {where} ({g/n:.2f}/gm vs his {bgv:.2f} {v} rate)"))
+        # HEATING UP: strong last 2-3 meetings (small sample, labeled)
+        tr = o["trail"][:3]
+        recent_cut = f"{PREV // 10000}-09-01"
+        if len(tr) >= 2 and all(x[0] >= recent_cut for x in tr) and all(x[2] + x[3] > 0 for x in tr):
+            tp = sum(x[2] + x[3] for x in tr); tg = sum(x[2] for x in tr); pvh = pois_tail(tp, base["ppg"] * len(tr))
+            if (tg >= 3 or tp >= max(6, 2.2 * base["ppg"] * len(tr))) and pvh < 0.01:
+                flags.append(dict(kind="heating", scope="recent", stat="P", n=len(tr), val=tp, rate=r3(tp / len(tr), 2), base=r3(base["ppg"], 2), pv=pvh,
+                                  label=f"Last {len(tr)} vs {opp}: " + ", ".join(f"{x[2]}G {x[3]}A" for x in tr) + " (small sample)"))
         if flags: o["flags"] = flags
     return out, base
 
@@ -387,7 +422,14 @@ def project(pid, p, g, rates, detail=True):
     if g[side + "B2B"]: why.append(f"{p['team']} on 2nd night of a back-to-back (-6%)")
     if pk_f > 1.03: why.append(f"PP-heavy producer vs weak {opp} PK ({opk:.1%})")
     h = (H2H.get(pid) or {}).get(opp)
-    if h and h.get("flags"): out["legend"] = [f["label"] for f in h["flags"]]; why.append("LEGENDARY H2H: " + h["flags"][0]["label"])
+    if h and h.get("flags"):
+        venue_ok = lambda f: f["kind"] != "venue" or (f["scope"] == "home") == home
+        fl = [f for f in h["flags"] if venue_ok(f)]
+        tag = {"legendary": "LEGENDARY H2H", "venue": "VENUE CRUSHER", "heating": "HEATING UP vs " + opp}
+        if fl:
+            out["legend"] = [f["label"] for f in fl if f["kind"] == "legendary"] or None
+            out["h2hNotes"] = [dict(kind=f["kind"], text=f"{tag[f['kind']]}: {f['label']} · {rarity(f['pv'])}") for f in fl]
+            why.append(out["h2hNotes"][0]["text"])
     out["why"] = why; out["m"] = r3(m)
     return out
 
@@ -409,7 +451,7 @@ for pid, p in PL.items():
     proj_by_player[pid] = xs[:10]
     for x in xs:
         if x["date"] in slate_days[:2] and not out_flag and rates["toi"] > 600:
-            slate.append(dict(pid=pid, name=p["name"], team=p["team"], pos=p["pos"], **{k: x[k] for k in ("gid", "date", "opp", "home", "pG", "pP", "xs", "p3S", "goalie", "backup", "why")}, legend=x.get("legend")))
+            slate.append(dict(pid=pid, name=p["name"], team=p["team"], pos=p["pos"], **{k: x[k] for k in ("gid", "date", "opp", "home", "pG", "pP", "xs", "p3S", "goalie", "backup", "why")}, legend=x.get("legend"), h2hNotes=x.get("h2hNotes")))
 slate.sort(key=lambda r: -r["pG"])
 
 # ---------------- write per-player files + index ----------------
@@ -433,7 +475,7 @@ for pid, p in PL.items():
     row = dict(p, cur=pack(c, isg), prev=pack(pv, isg), war=WAR[SEASON].get(pid), warPrev=WAR[PREV].get(pid),
                proj=season_proj.get(pid), next=(proj_by_player.get(pid) or [None])[0])
     h = H2H.get(pid) or {}
-    row["legend"] = sorted([f["label"] for o in h.values() for f in o.get("flags", [])])[:6]
+    row["legend"] = sorted([f["label"] for o in h.values() for f in o.get("flags", []) if f["kind"] == "legendary"])[:6]
     if land:
         row["age"] = (TODAY - dt.date.fromisoformat(land["birthDate"])).days // 365 if land.get("birthDate") else None
         ct = (land.get("careerTotals") or {}).get("regularSeason") or {}
@@ -450,7 +492,8 @@ for pid, h in H2H.items():
     for opp, o in h.items():
         for f in o.get("flags", []):
             nxt = next((g for g in upcoming if {g["home"], g["away"]} == {PL[pid]["team"], opp}), None)
-            legends.append(dict(pid=pid, name=PL[pid]["name"], team=PL[pid]["team"], opp=opp, **f, next=nxt["date"] if nxt else None))
+            nh = nxt and ((nxt["home"] == PL[pid]["team"]) == (f["scope"] == "home")) if f["kind"] == "venue" else True
+            legends.append(dict(pid=pid, name=PL[pid]["name"], team=PL[pid]["team"], opp=opp, **f, rare=rarity(f["pv"]), next=nxt["date"] if nxt else None, nextVenueMatch=bool(nh) if nxt else None))
 legends.sort(key=lambda x: (x["next"] is None, x["next"] or "", x["pv"]))
 
 goalies = {}
