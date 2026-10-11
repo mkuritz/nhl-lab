@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(ROOT, "data", "refresh_state.json")
 FULL = [("overnight", 2, 30), ("morning", 7, 0)]   # ET; window = target .. target+3h
 FULL_SPAN = dt.timedelta(hours=3)
-PRE = {90: (dt.timedelta(minutes=105), dt.timedelta(minutes=45)),   # fire when start-105m <= now < start-45m
+PRE = {90: (dt.timedelta(minutes=150), dt.timedelta(minutes=45)),   # widened: GitHub often runs */15 crons only every 1-2 h   # fire when start-105m <= now < start-45m
        30: (dt.timedelta(minutes=40), dt.timedelta(minutes=0))}     # fire when start-40m  <= now < start
 
 from events import load_events   # repo-specific: returns [(event_key, start_utc_datetime, target_label)]
@@ -24,7 +24,7 @@ def decide(now, events, state):
         for day in (d, d - dt.timedelta(days=1)):
             t = dt.datetime(day.year, day.month, day.day, h, m, tzinfo=ET)
             key = f"full:{name}:{day.isoformat()}"
-            if t <= now < t + FULL_SPAN and key not in fired: due_full.append(key)
+            if t - dt.timedelta(minutes=45) <= now < t + FULL_SPAN and key not in fired: due_full.append(key)
     due_pre = []
     for ek, start, target in events:
         for w, (a, b) in PRE.items():
