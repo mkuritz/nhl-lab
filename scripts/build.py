@@ -470,7 +470,7 @@ for pid, p in PL.items():
         return dict(gp=r["gamesPlayed"], g=r["goals"], a=r["assists"], p=r["points"], pm=r["plusMinus"], s=r["shots"], ppg=r["ppGoals"], ppp=r["ppPoints"],
                     toi=r3((r.get("timeOnIcePerGame") or 0) / 60, 1), pptoi=r3((r.get("ppTimeOnIcePerGame") or 0) / 60, 1),
                     cf=r3(r.get("satPercentage")), ff=r3(r.get("usatPercentage")), cfrel=r3(r.get("satRelative")), hits=r.get("hits"), blk=r.get("blockedShots"),
-                    shp=r3(r.get("shootingPct")), fo=r3(r.get("faceoffWinPct")))
+                    shp=r3(r.get("shootingPct")), fo=r3(r.get("faceoffWinPct")), shpts=r.get("shPoints"), pim=r.get("penaltyMinutes"))
     isg = p["pos"] == "G"
     row = dict(p, cur=pack(c, isg), prev=pack(pv, isg), war=WAR[SEASON].get(pid), warPrev=WAR[PREV].get(pid),
                proj=season_proj.get(pid), next=(proj_by_player.get(pid) or [None])[0])
@@ -687,7 +687,90 @@ for h in hot:
     h["ppToiPrev"] = r3((p.get("ppTimeOnIcePerGame") or 0) / 60, 1) if p else None
     h["shotsPrev"] = r3(p["shots"] / p["gamesPlayed"], 2) if p.get("gamesPlayed") else None
 
-wj("hot.json", hot[:600]); wj("grades.json", dict(grades=grades, sos=sos)); wj("teamx.json", dict(sim=sim, usage=usage, inj=team_inj, sims=N))
+wj("hot.json", hot[:600]);
+# ================= v4: fantasy =================
+def fz(): return [0.0] * 9   # G A PPP SHP SOG HIT BLK PIM PM
+def comp_rates(pid, pos):
+    c, p = SK[SEASON].get(pid, {}), SK[PREV].get(pid, {})
+    gpc, gpp = c.get("gamesPlayed", 0), p.get("gamesPlayed", 0)
+    den = gpc + W_PREV * gpp + K_SHRINK
+    pm = FPOS["D" if pos == "D" else "F"]
+    f = lambda k: (c.get(k, 0) + W_PREV * p.get(k, 0) + K_SHRINK * pm[k] * 0.6) / den
+    return dict(ppp=f("ppPoints"), shp=f("shPoints"), hits=f("hits"), blk=f("blockedShots"), pim=f("penaltyMinutes"), pm=f("plusMinus"))
+FPOS = {}
+for grp in ("F", "D"):
+    rows = [r for r in SK[PREV].values() if r.get("gamesPlayed", 0) >= 20 and (r.get("positionCode") == "D") == (grp == "D")]
+    gp = sum(r["gamesPlayed"] for r in rows) or 1
+    FPOS[grp] = {k: sum(r.get(k, 0) or 0 for r in rows) / gp for k in ("ppPoints", "shPoints", "hits", "blockedShots", "penaltyMinutes", "plusMinus")}
+wk0 = TODAY - dt.timedelta(days=TODAY.weekday())   # fantasy weeks Mon-Sun (ESPN default matchup period)
+WEEKS = [dict(key=f"w{i}", start=(wk0 + dt.timedelta(days=7 * i)).isoformat(), end=(wk0 + dt.timedelta(days=7 * i + 6)).isoformat()) for i in range(4)]
+def wkey(d):
+    for w in WEEKS:
+        if w["start"] <= d <= w["end"]: return w["key"]
+up4 = [g for g in upcoming if g["date"] <= WEEKS[-1]["end"]]
+FSK = {}
+for pid, p in PL.items():
+    if p["pos"] == "G": continue
+    rates = skater_rates(pid, p["pos"])
+    if rates["gp"] == 0: continue
+    cr = comp_rates(pid, p["pos"])
+    wk = {}
+    for g in [g for g in up4 if p["team"] in (g["home"], g["away"])]:
+        x = project(pid, p, g, rates, detail=False)
+        k = wkey(g["date"])
+        v = wk.setdefault(k, dict(n=0, c=fz(), opp=[]))
+        ratio = x["xp"] / rates["p"] if rates["p"] else 1
+        add_ = [x["xg"], max(0, x["xp"] - x["xg"]), cr["ppp"] * ratio, cr["shp"], x["xs"], cr["hits"], cr["blk"], cr["pim"], cr["pm"]]
+        v["n"] += 1; v["c"] = [a + b for a, b in zip(v["c"], add_)]
+        v["opp"].append(("" if x["home"] else "@") + x["opp"])
+    for v in wk.values(): v["c"] = [round(a, 3) for a in v["c"]]
+    FSK[pid] = dict(w=wk, r=[r3(rates["g"]), r3(rates["a"]), r3(cr["ppp"]), r3(cr["shp"]), r3(rates["s"]), r3(cr["hits"]), r3(cr["blk"]), r3(cr["pim"]), r3(cr["pm"])])
+FG = {}
+for g in up4:
+    for side, oside in (("home", "away"), ("away", "home")):
+        t, o = g[side], g[oside]
+        st, why, backup = project_goalie(t, g[side[0] + "B2B"])
+        if not st: continue
+        ph, pt = p_home_win(g["home"], g["away"])
+        pw = (ph if side == "home" else 1 - ph - pt) + pt * 0.5
+        lam = STR[o][0] * STR[t][1] / LGA * (0.97 if side == "home" else 1.03)
+        gfac = 0.5 + 0.5 * max(0.75, min(1.3, (1 - st["sv"]) / (1 - LSV[SEASON])))
+        lam *= gfac
+        sa = 0.5 * team_factor(t, "sapg", LSA) * LSA + 0.5 * team_factor(o, "sfpg", LSA) * LSA
+        k = wkey(g["date"])
+        v = FG.setdefault(st["id"], {}).setdefault(k, dict(n=0, c=[0.0] * 5, opp=[], alt=0))
+        v["n"] += 1; v["alt"] += 1 if backup else 0
+        v["c"] = [a + b for a, b in zip(v["c"], [pw, pt * 0.5, lam, max(0, sa - lam), math.exp(-lam)])]
+        v["opp"].append(("" if side == "home" else "@") + o + ("*" if backup else ""))
+for d in FG.values():
+    for v in d.values(): v["c"] = [round(a, 3) for a in v["c"]]
+grid = {}
+for ab in ABBRS:
+    for w in WEEKS:
+        tg = [g for g in up4 if ab in (g["home"], g["away"]) and w["start"] <= g["date"] <= w["end"]]
+        gr = [grades.get(f'{g["id"]}-{ab}') for g in tg]
+        grid.setdefault(ab, {})[w["key"]] = dict(n=len(tg), off=r3(sum(x["o"] for x in gr if x) / len(tg)) if tg else None,
+            dfn=r3(sum(x["d"] for x in gr if x) / len(tg)) if tg else None, b2b=sum(1 for g in tg if (g["home"] == ab and g["hB2B"]) or (g["away"] == ab and g["aB2B"])),
+            opp=[("" if g["home"] == ab else "@") + (g["away"] if g["home"] == ab else g["home"]) for g in tg])
+# ESPN fantasy rostership (public read API)
+OWN = {}
+try:
+    req = urllib.request.Request(f"https://lm-api-reads.fantasy.espn.com/apis/v3/games/fhl/seasons/{SEASON % 10000}/players?view=players_wl",
+                                 headers={"User-Agent": "nhl-lab/1.0", "X-Fantasy-Filter": json.dumps({"filterActive": {"value": True}})})
+    with urllib.request.urlopen(req, timeout=40) as r: ew = json.loads(r.read())
+    tid2ab = {v: k for k, v in eids.items()}
+    byname = {}
+    for x in ew:
+        byname.setdefault(norm(x.get("fullName", "")), []).append((tid2ab.get(str(x.get("proTeamId"))), (x.get("ownership") or {}).get("percentOwned")))
+    for pid, p in PL.items():
+        c = byname.get(norm(p["name"]), [])
+        m = [o for t, o in c if t == p["team"]] or ([c[0][1]] if len(c) == 1 else [])
+        if m and m[0] is not None: OWN[pid] = round(m[0], 1)
+except Exception as e:
+    print("ownership fetch failed", e)
+wj("fantasy.json", dict(weeks=WEEKS, sk=FSK, g=FG, grid=grid, own=OWN, ownSource="ESPN fantasy public player list (percentOwned)" if OWN else None))
+print("fantasy", len(FSK), "skaters", len(FG), "goalies", len(OWN), "ownership matches")
+wj("grades.json", dict(grades=grades, sos=sos)); wj("teamx.json", dict(sim=sim, usage=usage, inj=team_inj, sims=N))
 
 wj("schedule.json", [dict(id=g["id"], start=GAMES[g["id"]]["startTimeUTC"], away=g["away"], home=g["home"]) for g in games
     if g["state"] in ("FUT", "PRE") and g["date"] <= (TODAY + dt.timedelta(days=3)).isoformat()])
