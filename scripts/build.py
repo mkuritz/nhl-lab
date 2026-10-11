@@ -584,6 +584,66 @@ for (ab, nm), v in inj.items():
     if ab in team_inj:
         pid = next((pid for pid, p in PL.items() if p["team"] == ab and norm(p["name"]) == nm), None)
         team_inj[ab].append(dict(v, name=next((p["name"] for p in PL.values() if p["team"] == ab and norm(p["name"]) == nm), nm.title()), pid=pid))
+
+# ================= v3: derived lines, news, role trends =================
+import lines as LN
+SHC = os.path.join(DATA, "cache", "shifts"); os.makedirs(SHC, exist_ok=True)
+finals = [g for g in games if g["state"] in ("OFF", "FINAL")]
+need = {}
+for ab in ABBRS:
+    if TARGET and ab not in TARGET and os.path.exists(os.path.join(DATA, "lines.json")): continue
+    tg = [g for g in finals if ab in (g["home"], g["away"])][-2:]
+    for g in tg: need.setdefault(g["id"], []).append(ab)
+gl_res = dict(zip(need, pmap(lambda gid: LN.game_lines(gid, get, SHC), list(need), 6)))
+posmap = {pid: p["pos"] for pid, p in PL.items()}
+prev_lines = json.load(open(os.path.join(DATA, "lines.json"))) if os.path.exists(os.path.join(DATA, "lines.json")) else {}
+LINES = {}
+for ab in ABBRS:
+    tg = [g for g in finals if ab in (g["home"], g["away"])][-2:]
+    if not any(g["id"] in gl_res for g in tg):
+        if ab in prev_lines: LINES[ab] = prev_lines[ab]
+        continue
+    built = []
+    for g in tg:
+        r = gl_res.get(g["id"]) or (LN.game_lines(g["id"], get, SHC) if g["id"] not in gl_res else None)
+        if r:
+            for k, v in r["names"].items(): posmap.setdefault(int(k), "F")
+            b = LN.build_lines(ab, r, posmap)
+            if b: b["names"] = {str(p): (PL[p]["name"] if p in PL else r["names"].get(str(p), str(p))) for grp in ("F", "D", "PP") for u in b[grp] for p in u["p"]}; built.append(b)
+    if not built: continue
+    cur = built[-1]; prv = built[-2] if len(built) > 1 else None
+    if prv:
+        for grp in ("F", "D", "PP"):
+            for i, u in enumerate(cur[grp]):
+                old = max((set(x["p"]) for x in prv[grp]), key=lambda st: len(st & set(u["p"])), default=set())
+                u["new"] = [p for p in u["p"] if p not in old]
+                u["same"] = not u["new"]
+    LINES[ab] = dict(cur=cur, prev=dict(gid=prv["gid"], date=prv["date"], opp=prv["opp"]) if prv else None)
+wj("lines.json", LINES)
+
+# news (ESPN)
+ESPN_AB = {"LA": "LAK", "NJ": "NJD", "SJ": "SJS", "TB": "TBL", "UTAH": "UTA"}
+et = get("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams") or {}
+eids = {ESPN_AB.get(x["team"]["abbreviation"], x["team"]["abbreviation"]): x["team"]["id"] for x in et.get("sports", [{}])[0].get("leagues", [{}])[0].get("teams", [])}
+def art(a):
+    teams = [c.get("description") for c in a.get("categories", []) if c.get("type") == "team"]
+    return dict(h=a.get("headline"), d=a.get("description"), t=a.get("published"), u=((a.get("links") or {}).get("web") or {}).get("href"),
+                img=((a.get("images") or [{}])[0]).get("url"), type=a.get("type"), nteams=len(teams), teams=teams[:4])
+def team_news(ab):
+    if ab not in eids: return ab, []
+    d = get(f"https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news?team={eids[ab]}&limit=15") or {}
+    return ab, [art(a) for a in d.get("articles", [])]
+NEWS = dict(pmap(team_news, ABBRS, 8))
+lg = get("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/news?limit=30") or {}
+wj("news.json", dict(league=[art(a) for a in lg.get("articles", [])], teams=NEWS))
+
+# role trends (forwards vs defense): last-5 TOI & shots vs last season; PP TOI this season vs last
+for h in hot:
+    c, p = SK[SEASON].get(h["pid"], {}), SK[PREV].get(h["pid"], {})
+    h["ppToi"] = r3((c.get("ppTimeOnIcePerGame") or 0) / 60, 1) if c else None
+    h["ppToiPrev"] = r3((p.get("ppTimeOnIcePerGame") or 0) / 60, 1) if p else None
+    h["shotsPrev"] = r3(p["shots"] / p["gamesPlayed"], 2) if p.get("gamesPlayed") else None
+
 wj("hot.json", hot[:600]); wj("grades.json", dict(grades=grades, sos=sos)); wj("teamx.json", dict(sim=sim, usage=usage, inj=team_inj, sims=N))
 
 wj("schedule.json", [dict(id=g["id"], start=GAMES[g["id"]]["startTimeUTC"], away=g["away"], home=g["home"]) for g in games
