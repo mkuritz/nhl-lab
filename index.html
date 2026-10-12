@@ -313,5 +313,5 @@ if(v!==route._v)scrollTo(0,0);route._v=v}
 try{D.meta=await J('data/meta.json');$('#badge').textContent='Data updated '+D.meta.updatedET;
 const ks=['teams','games','players','slate','model','goalies','hot','grades','teamx','lines','news','fantasy'];const r=await Promise.all([...ks.map(k=>J(`data/${k}.json`)),J('data/h2h_flags.json')]);ks.forEach((k,i)=>D[k]=r[i]);D.h2h=r[ks.length];
 buildNav();drawMode();addEventListener('hashchange',route);route()}catch(e){console.error(e);$('#app').innerHTML='<div class="card r">Could not load data.</div>'}})();
-</script><div class="sl-credit" style="clear:both;text-align:center;font-size:12px;opacity:.6;padding:18px 12px 22px;line-height:1.5">NHL Lab · A <a href="https://mkuritz.github.io/sports-labs/" style="color:inherit;text-decoration:underline">Sports Labs</a> Product · Property of Michael Kuritz</div>
-</body></html>
+</script><div class="sl-credit" style="clear:both;text-align:center;font-size:12px;opacity:.6;padding:18px 12px 22px;line-height:1.5">NHL Lab · A <a href="https://mkuritz.github.io/sports-labs/" style="color:inherit;text-decoration:underline">Sports Labs</a> Product · Property of Michael Kuritz · <a href="#" data-lead="contact" style="color:inherit;text-decoration:underline">Contact</a> · <a href="#" data-lead="support" style="color:inherit;text-decoration:underline">Support</a></div>
+<script src="https://mkuritz.github.io/sports-labs/js/leads-config.js"></script><script src="https://mkuritz.github.io/sports-labs/js/leads.js" data-product="NHL Lab" data-float="1"></script></body></html>
