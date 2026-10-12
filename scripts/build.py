@@ -430,8 +430,55 @@ def project(pid, p, g, rates, detail=True):
             out["legend"] = [f["label"] for f in fl if f["kind"] == "legendary"] or None
             out["h2hNotes"] = [dict(kind=f["kind"], text=f"{tag[f['kind']]}: {f['label']} · {rarity(f['pv'])}") for f in fl]
             why.append(out["h2hNotes"][0]["text"])
+    fo = rates.get("form")
+    if fo and detail:
+        mp = fo["mult"]["p"]
+        if mp >= 1.04: why.append(f"Hot form: {fo['obs']['p']:.2f} pts/gm last {fo['n']} (shrunk to {fo['shr']['p']:.2f}), x{mp:.2f}" + ("; " + "; ".join(fo["notes"]) if fo["notes"] else ""))
+        elif mp <= 0.96: why.append(f"Cold form: {fo['obs']['p']:.2f} pts/gm last {fo['n']}, x{mp:.2f}")
+        elif fo["notes"]: why.append("Opportunity: " + "; ".join(fo["notes"]))
+        out["form"] = fo["mult"]["p"]
     out["why"] = why; out["m"] = r3(m)
     return out
+
+# ================= recent form + opportunity (shrunk) =================
+# Last-10 per-game rates blended with the season/career baseline using phantom games (FORM_K), so 5 hot early-season games
+# move the projection only modestly. Opportunity = last-5 TOI vs baseline TOI, PP TOI up vs last season, and a promotion to
+# top-6 F / PP1 in the previous build's derived lines (NHL shift charts). Form part capped 0.88-1.15; total multiplier capped 0.85-1.20.
+FORM_K = {"p": 20, "g": 25, "s": 12}
+_prev_lines = json.load(open(os.path.join(DATA, "lines.json"))) if os.path.exists(os.path.join(DATA, "lines.json")) else {}
+def _promoted(pid, ab):
+    b = (_prev_lines.get(ab) or {}).get("cur") or {}
+    top6 = [u for u in sorted(b.get("F", []), key=lambda u: -u.get("sec", 0))[:2]]
+    pp1 = sorted(b.get("PP", []), key=lambda u: -u.get("sec", 0))[:1]
+    out = []
+    for u in top6:
+        if pid in u.get("p", []) and pid in u.get("new", []): out.append("promoted to top-6 line")
+    for u in pp1:
+        if pid in u.get("p", []) and pid in u.get("new", []): out.append("new on PP1")
+    return out
+def form_of(pid, p, rates):
+    cache = details.get(pid, (None, {}))[1] or {}
+    cur = sorted(cache.get(str(SEASON), []), key=lambda r: r[1]); prev = sorted(cache.get(str(PREV), []), key=lambda r: r[1])
+    log = (prev + cur)[-10:]
+    if len(log) < 3: return None
+    n = len(log); obs = dict(p=sum(r[5] + r[6] for r in log) / n, g=sum(r[5] for r in log) / n, s=sum(r[7] for r in log) / n)
+    sh = {k: (n * obs[k] + FORM_K[k] * rates[k]) / (n + FORM_K[k]) for k in obs}
+    fm = {k: max(0.88, min(1.15, sh[k] / rates[k])) if rates[k] > 0 else 1.0 for k in obs}
+    l5 = log[-5:]; toi5 = sum(r[9] for r in l5) / len(l5) / 60
+    base_toi = (sum(r[9] for r in prev) / len(prev) / 60) if prev else (rates.get("toi") or 0) / 60 or None
+    c, pv = SK[SEASON].get(pid, {}), SK[PREV].get(pid, {})
+    pp, ppp = (c.get("ppTimeOnIcePerGame") or 0) / 60, (pv.get("ppTimeOnIcePerGame") or 0) / 60
+    opp, notes = 1.0, []
+    if base_toi:
+        r = toi5 / base_toi; opp *= max(0.92, min(1.10, 1 + 0.5 * (r - 1) * len(l5) / (len(l5) + 5)))
+        if r >= 1.12: notes.append(f"TOI up: {toi5:.1f} min last {len(l5)} vs {base_toi:.1f} baseline")
+    if c.get("gamesPlayed", 0) >= 3 and pp - ppp >= 1.0: opp *= 1.04; notes.append(f"PP time up: {pp:.1f} vs {ppp:.1f} min/gm last season")
+    pr = _promoted(pid, p["team"])
+    if pr: opp *= 1.03; notes += pr
+    mult = {k: max(0.85, min(1.2, fm[k] * opp)) for k in fm}
+    return dict(n=n, obs={k: r3(v, 2) for k, v in obs.items()}, shr={k: r3(v, 3) for k, v in sh.items()}, mult={k: r3(v, 3) for k, v in mult.items()},
+                opp=r3(opp, 3), toi5=r3(toi5, 1), baseToi=r3(base_toi, 1), pp=r3(pp, 1), ppPrev=r3(ppp, 1), notes=notes)
+FORM = {}
 
 proj_by_player = {}; slate = []
 season_proj = {}
@@ -439,6 +486,10 @@ for pid, p in PL.items():
     if p["pos"] == "G": continue
     rates = skater_rates(pid, p["pos"])
     if rates["gp"] == 0: continue
+    fo = form_of(pid, p, rates)
+    if fo:
+        FORM[pid] = fo; rates = dict(rates, g=rates["g"] * fo["mult"]["g"], p=rates["p"] * fo["mult"]["p"], s=rates["s"] * fo["mult"]["s"])
+        rates["form"] = fo
     if p["inj"] and p["inj"]["status"] in ("Out", "Injured Reserve", "Long Term Injured Reserve"):
         out_flag = True
     else: out_flag = False
@@ -532,10 +583,13 @@ for pid, p in PL.items():
     base_toi = (sum(r[9] for r in prev) / len(prev) / 60) if prev else None
     hp = l10["p"] / l10["n"] - rates["p"]; hg = l10["g"] / l10["n"] - rates["g"]; hs = l10["s"] / l10["n"] - rates["s"]
     score = hp * 1.0 + hg * 1.5 + hs * 0.15 + 0.05 * ps
+    fo = FORM.get(pid)
+    # hot score: shrunk per-game lift over baseline (points, goals, shots) + opportunity; needs 2+ games this season
+    hotScore = r3(100 * (fo["shr"]["p"] - rates["p"]) + 50 * (fo["shr"]["g"] - rates["g"]) + 3 * (fo["shr"]["s"] - rates["s"]) + 30 * (fo["opp"] - 1), 1) if fo and len(cur) >= 2 else None
     hot.append(dict(pid=pid, name=p["name"], team=p["team"], pos=p["pos"], l5=l5, l10=l10, ptStreak=ps, gStreak=gs,
                     base=dict(p=r3(rates["p"]), g=r3(rates["g"]), s=r3(rates["s"], 2)), baseToi=r3(base_toi, 1),
-                    toiDelta=r3(l5["toi"] - base_toi, 1) if base_toi else None, curGp=len(cur), score=r3(score), inj=p["inj"]["status"] if p["inj"] else None))
-hot.sort(key=lambda x: -x["score"])
+                    toiDelta=r3(l5["toi"] - base_toi, 1) if base_toi else None, curGp=len(cur), score=r3(score), hotScore=hotScore, formMult=fo["mult"] if fo else None, opp=fo["opp"] if fo else None, oppNotes=fo["notes"] if fo else [], inj=p["inj"]["status"] if p["inj"] else None))
+hot.sort(key=lambda x: -(x["hotScore"] if x["hotScore"] is not None else -99))
 
 # matchup grades per game per team (offense env vs opponent; defensive env = opponent offense)
 LGF = LGA
