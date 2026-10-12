@@ -45,6 +45,13 @@ jobs:
         env:
           TARGET_TEAMS: ${{ steps.d.outputs.mode == 'pregame' && steps.d.outputs.targets || '' }}
         run: python scripts/build.py
+      - name: Cross-check free sources (optional)
+        if: steps.d.outputs.mode != 'none'
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          XMODE: ${{ steps.d.outputs.mode }}
+        run: python scripts/nhl_xcheck.py
       - name: Commit
         if: steps.d.outputs.mode != 'none'
         run: |
