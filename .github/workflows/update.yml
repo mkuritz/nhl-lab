@@ -52,6 +52,9 @@ jobs:
         env:
           XMODE: ${{ steps.d.outputs.mode }}
         run: python scripts/nhl_xcheck.py
+      - name: Season guard (current season from date + same-day live roster check)
+        continue-on-error: true
+        run: python scripts/season_guard.py
       - name: Commit
         if: steps.d.outputs.mode != 'none'
         run: |

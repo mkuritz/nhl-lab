@@ -10,7 +10,7 @@ DATA = os.path.join(ROOT, "data"); CACHE = os.path.join(DATA, "cache", "gl")
 os.makedirs(os.path.join(DATA, "players"), exist_ok=True); os.makedirs(CACHE, exist_ok=True)
 ET = ZoneInfo("America/New_York")
 NOW = dt.datetime.now(ET); TODAY = NOW.date()
-SEASON = 20262027 if TODAY >= dt.date(2026, 9, 1) else 20252026
+SEASON = (TODAY.year if TODAY.month >= 7 else TODAY.year - 1) * 10001 + 1  # derived from date, e.g. 20262027
 y0 = SEASON // 10000
 if TODAY >= dt.date(y0 + 1, 7, 1): SEASON = (y0 + 1) * 10000 + y0 + 2
 PREV = (SEASON // 10000 - 1) * 10000 + SEASON // 10000
