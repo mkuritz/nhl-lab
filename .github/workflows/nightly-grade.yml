@@ -40,7 +40,7 @@ jobs:
           fi
           for attempt in 1 2 3; do
             before=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            gh workflow run update.yml -R "$REPO" -f mode=full
+            gh workflow run update.yml -R "$REPO"
             id=""
             for i in $(seq 1 30); do
               sleep 10
