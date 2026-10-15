@@ -40,6 +40,7 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://mkuritz.github.io/sports-labs/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
 <aside id="side"><nav id="nav"></nav></aside><div id="scrim" onclick="document.body.classList.remove('navopen')"></div><main id="app"><div class="card">Loading data…</div></main>
 <script>
+const sanitizeWhy=w=>String(w??'').replace(/\s*[×x]\s?\d+(\.\d+)?/g,'').replace(/\s*\((?:[+−-]?\d+(\.\d+)?%?\s*(?:wt|weight|boost)?)\)/gi,'').replace(/\s{2,}/g,' ').trim();
 const LS='nhllab:',V=[['slate','Daily Slate'],['hot','🔥 Hottest Players'],['watch','★ Watchlist'],['matchups','Matchups'],['fantasy','🏆 Fantasy'],['teams','Teams'],['players','Players'],['lines','Lines'],['news','News'],['war','WAR'],['h2h','H2H Flags'],['goalies','Goalies'],['schedule','Schedule'],['method','Methodology']];
 const D={},$=s=>document.querySelector(s),pc=x=>x==null?'–':(x*100).toFixed(0)+'%',f=(x,n=2)=>x==null?'–':(+x).toFixed(n),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(LS+k))??d}catch(e){return d}},set:(k,v)=>localStorage.setItem(LS+k,JSON.stringify(v))};
