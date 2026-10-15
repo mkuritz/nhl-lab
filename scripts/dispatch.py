@@ -11,6 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(ROOT, "data", "refresh_state.json")
 FULL = [("overnight", 2, 30), ("morning", 7, 0)]   # ET; window = target .. target+3h
 FULL_SPAN = dt.timedelta(hours=3)
+SKATE = (11, 30)   # ET morning-skate goalie/lines check for every team playing today (window 11:30 AM-1:30 PM ET)
 PRE = {90: (dt.timedelta(minutes=150), dt.timedelta(minutes=45)),   # widened: GitHub often runs */15 crons only every 1-2 h   # fire when start-105m <= now < start-45m
        30: (dt.timedelta(minutes=40), dt.timedelta(minutes=0))}     # fire when start-40m  <= now < start
 
@@ -30,6 +31,10 @@ def decide(now, events, state):
         for w, (a, b) in PRE.items():
             key = f"pre{w}:{ek}"
             if start - a <= now < start - b and key not in fired: due_pre.append((key, target))
+    sd = now.astimezone(ET).date(); st = dt.datetime(sd.year, sd.month, sd.day, *SKATE, tzinfo=ET)
+    if st <= now < st + dt.timedelta(hours=2) and f"skate:{sd}" not in fired:
+        today = [t for ek, start, t in events if start.astimezone(ET).date() == sd]
+        if today: due_pre += [(f"skate:{sd}", t) for t in today]
     if due_full:
         mode, targets, keys = "full", [], due_full + [k for k, _ in due_pre]   # full covers any pre-game window too
     elif due_pre:

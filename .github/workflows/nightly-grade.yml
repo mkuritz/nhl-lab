@@ -8,7 +8,6 @@ on:
     - cron: "5 7 * * *"    # 3:05 AM EDT / 2:05 AM EST  (primary)
     - cron: "5 8 * * *"    # 4:05 AM EDT / 3:05 AM EST  (backup)
     - cron: "5 9 * * *"    # 5:05 AM EDT / 4:05 AM EST  (backup)
-    - cron: "5 10 * * *"   # 6:05 AM EDT / 5:05 AM EST  (last backup)
   workflow_dispatch:
 
 permissions:

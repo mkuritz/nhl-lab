@@ -14,6 +14,7 @@ on:
     - cron: "52 8 * * *"
     - cron: "7 12 * * *"
     - cron: "22 13 * * *"
+    - cron: "42 15 * * *"   # morning-skate goalie window anchor (11:42 AM EDT)
   workflow_dispatch:
     inputs:
       mode:
