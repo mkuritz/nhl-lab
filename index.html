@@ -44,7 +44,7 @@ const sanitizeWhy=w=>String(w??'').replace(/\s*[×x]\s?\d+(\.\d+)?/g,'').replace
 const LS='nhllab:',V=[['slate','Daily Slate'],['hot','🔥 Hottest Players'],['watch','★ Watchlist'],['matchups','Matchups'],['fantasy','🏆 Fantasy'],['teams','Teams'],['players','Players'],['lines','Lines'],['news','News'],['war','WAR'],['h2h','H2H Flags'],['goalies','Goalies'],['schedule','Schedule'],['method','Methodology']];
 const D={},$=s=>document.querySelector(s),pc=x=>x==null?'–':(x*100).toFixed(0)+'%',f=(x,n=2)=>x==null?'–':(+x).toFixed(n),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(LS+k))??d}catch(e){return d}},set:(k,v)=>localStorage.setItem(LS+k,JSON.stringify(v))};
-const logo=a=>D.teams[a]?`<img class="tlogo" src="${D.teams[a].logo}" alt="">`:'';
+const logo=a=>D.teams[a]?`<img loading="lazy" decoding="async" class="tlogo" src="${D.teams[a].logo}" alt="">`:'';
 const pl=(id,n)=>`<a href="#player/${id}">${esc(n)}</a>`,tm=a=>`<a href="#team/${a}">${logo(a)}${a}</a>`;
 const fmtD=d=>new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 async function J(u){const r=await fetch(u+'?v='+(D.meta?.updated||Date.now()));if(!r.ok)throw Error(u);return r.json()}
@@ -92,7 +92,7 @@ return `<h2>Teams & Standings</h2><div class="card">${tbl(['Team','GP','W-L-OTL'
 <p class="small m">Early-season team rates are small samples (${T[0].gp||0} GP). Projections blend them with last season's rates.</p></div>`}
 function teamOld(a){const t=D.teams[a];if(!t)return '<div class="card">Unknown team</div>';const c=t.cur||{},p=t.prev||{},s=t.splits;const P=D.players.filter(x=>x.team===a);
 const gq=D.goalies[a];const up=D.games.filter(g=>(g.home===a||g.away===a)&&g.hs==null).slice(0,8);
-return `<div class="card hero"><img src="${t.logo}" alt=""><div><h2 style="margin:0">${t.name}</h2><div class="m">${t.div} · ${t.w}-${t.l}-${t.otl}, ${t.pts} pts · Streak ${t.streak} · L10 ${t.l10}</div></div></div>
+return `<div class="card hero"><img loading="lazy" decoding="async" src="${t.logo}" alt=""><div><h2 style="margin:0">${t.name}</h2><div class="m">${t.div} · ${t.w}-${t.l}-${t.otl}, ${t.pts} pts · Streak ${t.streak} · L10 ${t.l10}</div></div></div>
 <div class="grid"><div class="card"><h3>Team rates</h3>${tbl(['','This season','Last season'],[['GF/G','gfpg'],['GA/G','gapg'],['SF/G','sfpg'],['SA/G','sapg'],['PP%','pp'],['PK%','pk']].map(([l,k])=>`<tr><td>${l}</td><td>${k.length==2?pc(c[k]):f(c[k])}</td><td>${k.length==2?pc(p[k]):f(p[k])}</td></tr>`))}
 <p class="small m">Home ${s.H.gp} GP: ${f(s.H.gfpg)} GF / ${f(s.H.gapg)} GA · Road ${s.R.gp} GP: ${f(s.R.gfpg)} GF / ${f(s.R.gapg)} GA</p></div>
 <div class="card"><h3>Goalies</h3>${gq.order.map(g=>`<div>${pl(g.id,g.name)} <span class="m">${g.starts} GS · SV% ${f(g.sv,3)}</span>${g.out?` <span class="pill bk">${esc(g.inj.status)}</span>`:''}</div>`).join('')}<p class="small m">Starter-backup gap: ${gq.gap==null?'–':f(gq.gap,3)}</p></div>
@@ -148,7 +148,7 @@ function method(){return `<h2>Methodology</h2>
 async function player(id){let p;try{p=await J(`data/players/${id}.json`)}catch(e){return '<div class="card">Player not found.</div>'}
 const G=p.pos==='G',c=p.cur||{};const h2=Object.entries(p.h2h||{}).sort((a,b)=>b[1].career[0]-a[1].career[0]);
 const nextOpps=new Set((p.projGames||[]).map(x=>x.opp));
-let h=`<div class="card hero"><img src="${p.head}" onerror="this.style.visibility='hidden'" alt=""><div><h2 style="margin:0">${esc(p.name)} <span class="m">#${p.num??''}</span> ${starBtn(p.id)}</h2>
+let h=`<div class="card hero"><img loading="lazy" decoding="async" src="${p.head}" onerror="this.style.visibility='hidden'" alt=""><div><h2 style="margin:0">${esc(p.name)} <span class="m">#${p.num??''}</span> ${starBtn(p.id)}</h2>
 <div class="m">${tm(p.team)} · ${p.pos} · ${p.age?p.age+' yrs':''} ${p.birth?'· '+esc(p.birth):''}</div>${p.inj?`<div class="r small">${esc(p.inj.status)}: ${esc(p.inj.note)}</div>`:''}
 ${(p.legend||[]).map(l=>`<span class="pill leg">${esc(l)}</span>`).join('')}</div></div>`;
 if(!G){h+=`<div class="card"><h3>This season · projection</h3><div class="kv"><div>GP<b>${c.gp??0}</b></div><div>G<b>${c.g??0}</b></div><div>A<b>${c.a??0}</b></div><div>P<b>${c.p??0}</b></div><div>SOG<b>${c.s??0}</b></div><div>TOI<b>${f(c.toi,1)}</b></div><div>PP TOI<b>${f(c.pptoi,1)}</b></div><div>CF%<b>${pc(c.cf)}</b></div><div>WAR<b>${f(p.war?.war)}</b></div>
@@ -226,7 +226,7 @@ function team(a,tab='overview'){const t=D.teams[a];if(!t)return '<div class="car
 const P=D.players.filter(x=>x.team===a),SK=P.filter(x=>x.pos!=='G'),GL=P.filter(x=>x.pos==='G');const H=D.hot.filter(x=>x.team===a);
 const T=[['overview','Overview'],['roster','Roster'],['lines','Lines/Usage'],['news','News'],['goalies','Goalies'],['schedule','Schedule'],['injuries','Injuries'],['proj','Projections'],['h2h','H2H Flags'],['hot','Hot/Cold']];
 const conf=Object.values(D.teams).filter(x=>x.conf===t.conf).sort((x,y)=>x.confRank-y.confRank);
-let h=`<div class="card hero"><img src="${t.logo}" alt=""><div><h2 style="margin:0">${t.name} <span class="m small">GM Hub</span></h2><div class="m">${t.div} Division · #${t.divRank} div · #${t.confRank} ${t.conf} · #${t.leagueRank} NHL</div>
+let h=`<div class="card hero"><img loading="lazy" decoding="async" src="${t.logo}" alt=""><div><h2 style="margin:0">${t.name} <span class="m small">GM Hub</span></h2><div class="m">${t.div} Division · #${t.divRank} div · #${t.confRank} ${t.conf} · #${t.leagueRank} NHL</div>
 <div><b>${t.w}-${t.l}-${t.otl}</b> · ${t.pts} pts · streak ${t.streak} · L10 ${t.l10} · Proj <b>${sim.mean}</b> pts · Playoff ${pc(sim.playoff)} <span class="m small">(est.)</span></div></div></div>
 <div class="tabs">${T.map(([k,l])=>`<a href="#team/${a}/${k}" class="${k===tab?'on':''}">${l}</a>`).join('')}</div>`;
 const FIN=g=>g.state==='OFF'||g.state==='FINAL';const up=D.games.filter(g=>(g.home===a||g.away===a)&&!FIN(g)&&g.hs==null);const done=D.games.filter(g=>(g.home===a||g.away===a)&&FIN(g));
