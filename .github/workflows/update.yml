@@ -15,6 +15,10 @@ on:
     - cron: "7 12 * * *"
     - cron: "22 13 * * *"
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "full = force full rebuild; auto = let the dispatcher pick (used by the live loop's pre-game kick)"
+        default: full
 
 permissions:
   contents: write
@@ -34,7 +38,7 @@ jobs:
       - name: Dispatch
         id: d
         env:
-          FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' }}
+          FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'auto' }}
         run: python3 scripts/dispatch.py
       - uses: actions/setup-python@v5
         if: steps.d.outputs.mode != 'none'

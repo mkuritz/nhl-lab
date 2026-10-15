@@ -33,6 +33,8 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 .tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:12px}.tabs a{padding:7px 12px;border-radius:8px;background:var(--p);border:1px solid var(--b);color:var(--m);font-weight:600;white-space:nowrap}.tabs a.on{background:var(--a);color:#000}
 .gS,.gE{color:var(--g);font-weight:700}.gW,.gT{color:var(--r);font-weight:700}.gN{color:var(--m)}.star{cursor:pointer;color:var(--y);font-size:18px;background:none;border:0}
 .tlogo{width:20px;height:20px;vertical-align:middle;margin-right:4px}
+.pill.riv{background:#3a1a2e;border-color:#7a3a5a;color:#ff9ec0}.pill.ok{background:#0c2b20;border-color:#1d6b4c;color:var(--g)}.pill.proj{background:#2a2205;border-color:#6b5512;color:var(--y)}
+.wl-add{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px}.wl-add .dd{position:relative;flex:1;min-width:220px}.wl-add .dd ul{position:absolute;z-index:6;left:0;right:0;max-height:260px;overflow:auto;background:var(--p);border:1px solid var(--b);border-radius:8px;margin:4px 0 0;padding:0;list-style:none}.wl-add .dd li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--b}}.wl-add .dd li:hover{background:var(--p2)}.sug{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
 @media(max-width:640px){.brand{display:none}.badge{display:none}main{padding:10px}th,td{padding:6px 5px}.hide-m{display:none}}
 </style></head><body>
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://mkuritz.github.io/sports-labs/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
@@ -58,9 +60,12 @@ let h=`<h2>Daily Slate</h2><div class="filters">${days.map(d=>`<a class="pill" s
 <select onchange="ls.set('slpos',this.value);route()">${[['all','All skaters'],['F','Forwards'],['D','Defense']].map(([v,l])=>`<option value="${v}"${v===pos?' selected':''}>${l}</option>`).join('')}</select></div>
 <div class="grid"><div class="card" style="grid-column:1/-1"><h3>Games (${gs.length})</h3><div class="grid">${gs.map(g=>{const ga=gq.find(x=>x.gid===g.id&&x.team===g.away),gh=gq.find(x=>x.gid===g.id&&x.team===g.home);
 const gl=x=>x?`${x.gid_?pl(x.gid_,x.goalie):'?'} <span class="m">${f(x.sv,3)}</span>${x.backup?' <span class="pill bk">BACKUP/ALT</span>':''}`:'–';
-return `<div><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
-<div class="small m">${g.hs!=null?`${g.state==='OFF'||g.state==='FINAL'?'Final':'Live'}: ${g.away} ${g.as_} – ${g.home} ${g.hs}`:g.state==='FUT'||g.state==='PRE'?`Proj. goalies (heuristic): ${gl(ga)} vs ${gl(gh)}`:'In progress'}</div></div>`}).join('')||'<span class="m">No games.</span>'}</div>
-<p class="small m">Goalies are <b>projected</b> from recent starts, back-to-backs and ESPN injury status — not confirmed lineups. Check team news before puck drop.</p></div>
+const L=liveG(g);const Ga=gStatus(ga||{gid:g.id,team:g.away}),Gh=gStatus(gh||{gid:g.id,team:g.home});
+const gl2=x=>{if(!x||!x.goalie)return'–';const st=x.status||'Projected';return `${x.gid_?pl(x.gid_,x.goalie):esc(x.goalie)} <span class="pill ${st==='Confirmed'?'ok':'proj'}" title="${esc((x.source||'')+' · '+(x.asOf||''))}">${st}</span>${x.backup?' <span class="pill bk">BACKUP/ALT</span>':''}`};
+const score=L.hs!=null||L.as_!=null;const live=score&&L.state!=='OFF'&&L.state!=='FINAL';
+return `<div><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${rivPill(g)} ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
+<div class="small m">${score?`<b class="${live?'y':'g'}">${L.state==='OFF'||L.state==='FINAL'?'Final':(L.detail||('P'+(L.period||'')+' '+ (L.clock||'Live')))}</b>: ${g.away} <b>${L.as_??0}</b> – ${g.home} <b>${L.hs??0}</b>${L.sogA!=null?` · SOG ${L.sogA}-${L.sogH}`:''}`:`Goalies: ${gl2(Ga)} vs ${gl2(Gh)}`}</div></div>`}).join('')||'<span class="m">No games.</span>'}</div>
+<p class="small m">Scores refresh about every minute during games (ESPN scoreboard + our NHL API live feed). Goalies: <span class="pill ok">Confirmed</span> = NHL boxscore starter or Daily Faceoff confirmed; <span class="pill proj">Projected</span> = our model (starts, B2B, ESPN injuries). Rivalry tags are labels only — they do not move projections.</p></div>
 <div class="card"><h3>Top goal-scorer candidates</h3>${R.slice(0,25).map(r=>cand(r,'pG','to score')).join('')}</div>
 <div class="card"><h3>Top point candidates</h3>${[...R].sort((a,b)=>b.pP-a.pP).slice(0,25).map(r=>cand(r,'pP','for a point')).join('')}</div>
 <div class="card"><h3>Shot volume (P 3+ SOG)</h3>${[...R].sort((a,b)=>b.p3S-a.p3S).slice(0,20).map(r=>cand(r,'p3S','3+ shots',`xSOG ${f(r.xs,1)}`)).join('')}</div>
@@ -121,7 +126,8 @@ return `<h2>Head-to-Head Flags</h2><div class="filters"><select onchange="ls.set
 function goalies(){const A=Object.keys(D.goalies).sort();return `<h2>Goalie Context</h2><div class="card"><p class="small m">The starter order uses this season's starts, plus last season's as a tiebreak. Injury status comes from ESPN. SV% is shrunk toward league average (${f(D.model.leagueSV,3)}) with 600 phantom shots, so tiny samples don't swing the projections.</p>
 ${tbl(['Team','No. 1','SV%','GS','No. 2','SV%','GS','Gap','Injuries'],A.map(a=>{const o=D.goalies[a].order,g1=o[0]||{},g2=o[1]||{};const inj=o.filter(g=>g.inj).map(g=>`${esc(g.name)}: ${esc(g.inj.status)}`).join('; ');
 return `<tr>${td(tm(a),a)}${td(g1.id?pl(g1.id,g1.name):'–')}${td(f(g1.sv,3))}${td(g1.starts??'–')}${td(g2.id?pl(g2.id,g2.name):'–')}${td(f(g2.sv,3))}${td(g2.starts??'–')}${td(f(D.goalies[a].gap,3),D.goalies[a].gap??-1)}${td(inj?'<span class="r">'+inj+'</span>':'<span class="m">none listed</span>',inj)}</tr>`}))}</div>
-<div class="card"><h3>Projected starters, next slates</h3>${tbl(['Date','Team','Projected','SV%','Reason'],D.slate.goalies.map(g=>`<tr>${td(fmtD(g.date),g.date)}${td(g.team)}${td((g.gid_?pl(g.gid_,g.goalie):'–')+(g.backup?' <span class="pill bk">ALT</span>':''))}${td(f(g.sv,3))}<td class="l small">${esc(g.why)}</td></tr>`))}</div>`}
+<div class="card"><h3>Projected starters, next slates</h3>${tbl(['Date','Team','Starter','Status','SV%','Source / reason'],D.slate.goalies.map(g=>{const L=gStatus(g);const st=L.status||g.status||'Projected';
+return `<tr>${td(fmtD(g.date),g.date)}${td(g.team)}${td((L.gid_||g.gid_?pl(L.gid_||g.gid_,L.goalie||g.goalie):esc(L.goalie||g.goalie||'–'))+(g.backup&&st!=='Confirmed'?' <span class="pill bk">ALT</span>':''))}${td(`<span class="pill ${st==='Confirmed'?'ok':'proj'}">${st}</span>`)}${td(f(g.sv,3))}<td class="l small">${esc(L.source||g.source||g.why||'')}${L.asOf||g.asOf?` · <span class="m">${esc((L.asOf||g.asOf||'').replace('T',' ').slice(0,16))} ET</span>`:''}</td></tr>`}))}</div>`}
 
 function method(){const m=D.model,r=m.repl[m.prev]||{},rc=m.repl[m.season]||{};return `<h2>Methodology</h2>
 <div class="card"><h3>Data & refresh</h3><p>Every number comes from free public feeds: NHL's api-web.nhle.com (schedules, rosters, game logs, standings), api.nhle.com/stats (season stats, TOI, 5v5 shot attempts), and ESPN's NHL injury report. GitHub Actions does a full rebuild at about 2:30 AM ET (after late games) and 7:00 AM ET, plus targeted rebuilds of just the teams playing about 90 and 30 minutes before each puck drop. It can also be run by hand. Past-season game logs are cached, and the current season is refetched every run.</p></div>
@@ -164,8 +170,20 @@ tbl(['Date','Opp','G','A','P','SOG','PPP','TOI','+/-'],lg.map(r=>`<tr>${td(r[1])
 return h}
 
 
-const W=()=>ls.get('watch',[]);function starBtn(id){const on=W().includes(+id);return `<button class="star" title="Watchlist" onclick="togW(${id});event.stopPropagation()">${on?'★':'☆'}</button>`}
-function togW(id){let w=W();w=w.includes(id)?w.filter(x=>x!==id):[...w,id];ls.set('watch',w);route()}
+const W=()=>(ls.get('watch',[])||[]).map(Number).filter(Boolean);
+function starBtn(id){id=+id;const on=W().includes(id);return `<button class="star" title="Watchlist" onclick="togW(${id});event.stopPropagation()">${on?'★':'☆'}</button>`}
+function togW(id){id=+id;let w=W();w=w.includes(id)?w.filter(x=>x!==id):[...w,id];ls.set('watch',w);route()}
+function sugWatch(){const have=new Set(W());const out=[],seen=new Set();
+  const push=(pid,why)=>{pid=+pid;if(!pid||have.has(pid)||seen.has(pid))return;seen.add(pid);const p=D.players.find(x=>x.id===pid);if(p)out.push({pid,name:p.name,team:p.team,pos:p.pos,why})};
+  (D.hot||[]).filter(x=>x.hotScore!=null).slice(0,12).forEach(x=>push(x.pid,'Hottest'));
+  (D.hot||[]).filter(x=>(x.oppNotes||[]).length).slice(0,8).forEach(x=>push(x.pid,'Role change'));
+  (D.slate?.rows||[]).slice(0,15).forEach(x=>push(x.pid,'Slate pick'));
+  return out.slice(0,18)}
+function watchSearch(q){q=(q||'').toLowerCase().trim();if(q.length<2)return[];const have=new Set(W());
+  return D.players.filter(x=>x.pos!=='G'||true).filter(x=>!have.has(x.id)&&x.name.toLowerCase().includes(q)).slice(0,20)}
+window._wlQ=function(v){const ul=document.getElementById('wldd');if(!ul)return;const rows=watchSearch(v);
+  ul.innerHTML=rows.map(x=>`<li onclick="togW(${x.id})"><b>${esc(x.name)}</b> <span class="m">${x.team} ${x.pos}</span></li>`).join('')||(v.length>=2?'<li class="m">No matches</li>':'');ul.style.display=rows.length||v.length>=2?'block':'none'};
+window._wlBlur=()=>setTimeout(()=>{const ul=document.getElementById('wldd');if(ul)ul.style.display='none'},180);
 const GR=(gid,t)=>D.grades.grades[gid+'-'+t];const gc=x=>x?`<span class="g${x[0]}">${x}</span>`:'–';
 function hot(){const pos=ls.get('hpos','sk'),win=ls.get('hwin','l10'),t=ls.get('htm','ALL');const A=Object.keys(D.teams).sort();
 let H=D.hot.filter(x=>(t==='ALL'||x.team===t)&&(pos==='sk'||(pos==='D'?x.pos==='D':x.pos!=='D')));
@@ -181,12 +199,19 @@ return `<h2>Hottest Players</h2><div class="filters"><select onchange="ls.set('h
 <div class="card"><h3>Active goal streaks (2+)</h3>${gstr.map(x=>`<div>${starBtn(x.pid)}${pl(x.pid,x.name)} <span class="m small">${x.team}</span> <b class="g" style="float:right">${x.gStreak} GP</b></div>`).join('')||'<span class="m">None</span>'}</div>
 </div>${roles(H)}
 <div class="card"><h3>Hottest vs baseline (ranked)</h3>${tbl(['Player','Team','Pos','P (per gm)','Base P','G (per gm)','Base G','SOG/gm','Base SOG','PPP','Pt strk','TOI','TOI Δ',...(FM()?['FP/gm*']:[])],(FM()?[...H].sort((a,b)=>hotFP(b[win])/b[win].n-hotFP(a[win])/a[win].n):H).slice(0,150).map(r))+(FM()?'<p class="small m">*Fantasy mode: FP/gm over the window uses G, A, PPP and SOG only. Per-game hits, blocks and SHP aren\'t in the free game logs.</p>':'')}</div>`}
-function watch(){const ids=W();if(!ids.length)return `<h2>★ Watchlist</h2><div class="card">No players yet. Tap ☆ next to any player on the Hot List or a player page.<br><br><b>Quick add:</b> ${D.hot.slice(0,12).map(x=>`<a class="pill" onclick="togW(${x.pid})">+ ${esc(x.name)}</a>`).join('')}</div>`;
+async function watch(){await loadRecaps();const ids=W();const sug=sugWatch();
+const addUI=`<div class="wl-add"><div class="dd"><input id="wlq" placeholder="Search any active player to add…" oninput="_wlQ(this.value)" onfocus="_wlQ(this.value)" onblur="_wlBlur()" autocomplete="off" style="width:100%"><ul id="wldd" style="display:none"></ul></div>
+<span class="m small" style="align-self:center">${ids.length} on watchlist · unlimited · saved in this browser</span></div>
+<div class="card" style="padding:10px 14px"><b>Suggested / recommended</b><div class="small m" style="margin:4px 0 8px">From Hottest Players, role changes and tonight's slate. Tap to add.</div><div class="sug">${sug.map(x=>`<a class="pill" onclick="togW(${x.pid})" title="${esc(x.why)}">+ ${esc(x.name)} <span class="m">${x.team}</span></a>`).join('')||'<span class="m">Everyone interesting is already on your list.</span>'}</div></div>`;
+if(!ids.length)return `<h2>★ Watchlist</h2>${addUI}<div class="card">No players yet. Search above, tap a suggestion, or hit ☆ next to any player.</div>`;
 const P=ids.map(id=>D.players.find(x=>x.id===id)).filter(Boolean);
-return `<h2>★ Watchlist</h2><p class="small m">Saved in this browser. Alerts use the next scheduled game.</p><div class="grid">${P.map(x=>{const n=x.next,h=D.hot.find(y=>y.pid===x.id),al=[];
+return `<h2>★ Watchlist</h2>${addUI}<div class="grid">${P.map(x=>{const n=x.next,h=D.hot.find(y=>y.pid===x.id),al=[],rc=(LIVE.recaps.players||{})[String(x.id)];
 if(x.inj)al.push(`<span class="pill bk">${esc(x.inj.status)}</span>`);if(n?.backup)al.push(`<span class="pill bk">Faces backup/alt: ${esc(n.goalie)}</span>`);(n?.h2hNotes||[]).forEach(z=>al.push(`<span class="pill ${KL[z.kind][1]}" title="${esc(z.text)}">${KL[z.kind][0]} vs ${n.opp}</span>`));
 if(h&&h.ptStreak>=3)al.push(`<span class="pill" style="color:var(--g)">${h.ptStreak}-game point streak</span>`);const g=n?GR(n.gid,x.team):null;if(g?.og==='Strong')al.push(`<span class="pill" style="color:var(--g)">Strong matchup</span>`);
 return `<div class="card"><div style="display:flex;align-items:center;gap:8px">${starBtn(x.id)}<b>${pl(x.id,x.name)}</b><span class="m small">${x.team} ${x.pos}</span></div><div>${al.join('')||'<span class="small m">No alerts</span>'}</div>
+${rc?`<div class="note" style="margin-top:8px"><b>Last game · ${fmtD(rc.date)} ${rc.home?'vs':'@'} ${rc.opp} (${rc.result})</b><div class="small" style="margin-top:4px">${esc(rc.text)}</div>
+<div class="kv" style="margin-top:8px"><div>Line<b>${esc(rc.line)}</b></div><div>TOI<b>${esc(rc.toi)}</b></div>${rc.pptoi?`<div>PP TOI<b>${esc(rc.pptoi)}</b></div>`:''}</div>
+${(rc.plays||[]).length?`<ul class="why">${rc.plays.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`:''}<div class="small m">Recap by Sports Labs from the official NHL box score & play-by-play.</div></div>`:''}
 ${x.pos==='G'?`<p class="small">${x.cur?`${x.cur.gp} GP · ${f(x.cur.sv,3)} SV%`:'No games yet'}${FM()?` · Wk proj ${wkProj(x.id,true,curWeek()).n} starts, ${f(wkProj(x.id,true,curWeek()).fp,1)} FP`:''}</p>`:`<div class="kv" style="margin-top:8px"><div>Season<b>${x.cur?.g??0}G ${x.cur?.p??0}P</b></div><div>L5<b>${h?`${h.l5.g}G ${h.l5.p}P`:'–'}</b></div><div>Proj<b>${f(x.proj?.G,0)}G ${f(x.proj?.P,0)}P</b></div>${FM()?`<div>Wk FP (proj)<b class="y">${f(wkProj(x.id,false,curWeek()).fp,1)}</b></div><div>Own%<b>${ownS(x.id)}</b></div>`:''}</div>
 ${n?`<p class="small">Next: <b>${fmtD(n.date)} ${n.home?'vs':'@'} ${n.opp}</b>. P(goal) <b>${pc(n.pG)}</b> · P(point) <b>${pc(n.pP)}</b> · xSOG ${f(n.xs,1)} · goalie ${esc(n.goalie||'?')} · matchup ${gc(g?.og)}</p><ul class="why">${(n.why||[]).map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`:''}`}</div>`}).join('')}</div>`}
 function matchups(){const n=ls.get('sosn','5');const S=Object.entries(D.grades.sos).filter(([a,v])=>v[n]);
@@ -246,15 +271,44 @@ return `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(5
 function lineCard(a,compact){const L=D.lines[a];if(!L)return `<div class="card"><h3>${tm(a)}</h3><span class="m">No completed games yet.</span></div>`;const c=L.cur,nm=p=>{const n=c.names[p]||p;return D.players.find(x=>x.id===+p)?pl(p,n):esc(n)};
 const u=(x,lab)=>`<div style="padding:4px 0;border-bottom:1px solid var(--b)"><span class="pill">${lab}</span> ${x.p.map(p=>{const isNew=(x.new||[]).includes(p);return isNew?`<b class="y" title="New to this unit vs previous game">${nm(p)} ●</b>`:nm(p)}).join(' – ')} <span class="m small" style="float:right">${Math.round(x.sec/60)}:${String(x.sec%60).padStart(2,'0')} ${lab.startsWith('PP')?'PP':'5v5'}</span></div>`;
 return `<div class="card"><h3>${tm(a)} <span class="m small">from ${fmtD(c.date)} vs ${c.opp}${L.prev?` · changes vs ${fmtD(L.prev.date)} (${L.prev.opp}) in <span class="y">● gold</span>`:''}</span></h3>
-${c.F.map((x,i)=>u(x,'L'+(i+1))).join('')}${c.D.map((x,i)=>u(x,'D'+(i+1))).join('')}${c.PP.map((x,i)=>u(x,'PP'+(i+1))).join('')||'<div class="small m">No PP time last game.</div>'}</div>`}
+${c.F.map((x,i)=>u(x,'L'+(i+1))).join('')}${c.D.map((x,i)=>u(x,'D'+(i+1))).join('')}${c.PP.map((x,i)=>u(x,'PP'+(i+1))).join('')||'<div class="small m">No PP time last game.</div>'}
+${c.method?`<p class="small m">${esc(c.method)}${c.builtAt?` · built ${esc(c.builtAt.replace('T',' ').slice(0,16))} ET`:''}</p>`:''}</div>`}
 function lines(){const t=ls.get('lteam','ALL'),A=Object.keys(D.teams).sort();const T=t==='ALL'?A:[t];
 return `<h2>Lines</h2><div class="filters"><select onchange="ls.set('lteam',this.value);route()"><option value="ALL">All teams</option>${A.map(a=>`<option${a===t?' selected':''}>${a}</option>`).join('')}</select></div>
-<div class="note"><b>Derived, not official.</b> These are inferred from NHL shift charts for each team's most recent completed game. Forward trios and D pairs are the combinations that shared the most 5v5 ice time, and PP units are the 5 skaters who shared the most power-play time with that unit's PP leader. Times show shared ice time. Gold ● = the player wasn't on the closest-matching unit in the previous game. Healthy scratches and in-game shuffles can blur this.</div><br>
+<div class="note"><b>Derived, not official.</b> These are inferred from NHL shift charts across each team's last up to 3 completed games (weighted 1 / 0.5 / 0.25), excluding players listed Out/IR or no longer on the roster. Forward trios and D pairs are the combinations that shared the most 5v5 ice time, and PP units are the 5 skaters who shared the most power-play time with that unit's PP leader. Times show shared ice time. Gold ● = the player wasn't on the closest-matching unit in the previous game. Healthy scratches and in-game shuffles can blur this.</div><br>
 <div class="grid">${T.map(a=>lineCard(a)).join('')}</div>`}
 function newsList(arr,n=30){return arr.slice(0,n).map(a=>`<div class="cand">${a.img?`<img src="${a.img}" style="width:84px;height:56px;border-radius:8px;object-fit:cover" loading="lazy" alt="">`:''}<div><a href="${a.u}" target="_blank" rel="noopener"><b>${esc(a.h)}</b></a><div class="small m">${a.t?new Date(a.t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET':''} · ${esc(a.type||'')}${a.nteams>4?' · league-wide':a.teams?.length?' · '+a.teams.map(esc).join(', '):''}</div><div class="small">${esc(a.d||'')}</div></div></div>`).join('')||'<span class="m">No articles.</span>'}
 function news(){const t=ls.get('nteam','ALL'),A=Object.keys(D.teams).sort();return `<h2>News</h2><div class="filters"><select onchange="ls.set('nteam',this.value);route()"><option value="ALL">League-wide</option>${A.map(a=>`<option${a===t?' selected':''}>${a}</option>`).join('')}</select></div>
 <div class="card">${newsList(t==='ALL'?D.news.league:(D.news.teams[t]||[]))}<p class="small m">Source: ESPN NHL news feed, refreshed with every data run. Links open ESPN.</p></div>`}
 
+
+
+// ---------------- Live scores (ESPN CORS-open scoreboard) + official NHL Lab live branch ----------------
+const ESPN_AB={"LAK":"LA","NJD":"NJ","SJS":"SJ","TBL":"TB","UTA":"UTAH","MTL":"MTL"};
+const AB_ESPN=Object.fromEntries(Object.entries(ESPN_AB).map(([a,b])=>[b,a]));
+const LIVE={games:{},goalies:{},recaps:{},ts:0};
+async function pullLive(){
+  try{
+    const [espn,live]=await Promise.all([
+      fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard').then(r=>r.json()).catch(()=>null),
+      fetch('https://raw.githubusercontent.com/mkuritz/nhl-lab/live/live.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
+    ]);
+    if(live){live.games.forEach(g=>LIVE.games[g.id]=Object.assign(LIVE.games[g.id]||{},g));(live.goalies||[]).forEach(g=>LIVE.goalies[g.gid+'-'+g.team]=g);LIVE.src=live.updatedET}
+    if(espn){(espn.events||[]).forEach(e=>{const c=e.competitions[0],away=c.competitors.find(x=>x.homeAway==='away'),home=c.competitors.find(x=>x.homeAway==='home');
+      const aAb=AB_ESPN[away.team.abbreviation]||away.team.abbreviation,hAb=AB_ESPN[home.team.abbreviation]||home.team.abbreviation;
+      const g=D.games.find(x=>x.date===(espn.day?.date||LIVE.date||'')&&x.away===aAb&&x.home===hAb)||D.games.find(x=>x.away===aAb&&x.home===hAb&&(x.state==='FUT'||x.state==='PRE'||x.state==='LIVE'||x.state==='CRIT'||!x.end));
+      if(!g)return;const st=e.status.type;const state=st.completed?'OFF':st.state==='in'?'LIVE':st.state==='pre'?'FUT':g.state;
+      LIVE.games[g.id]=Object.assign(LIVE.games[g.id]||{},{id:g.id,state,as_:+away.score||0,hs:+home.score||0,period:c.status?.period,clock:c.status?.displayClock,detail:st.detail||st.description});
+    })}
+    LIVE.ts=Date.now();
+  }catch(e){console.warn('live',e)}
+}
+function liveG(g){return Object.assign({},g,LIVE.games[g.id]||{})}
+function gStatus(x){const L=LIVE.goalies[x.gid+'-'+x.team];if(L)return L;return x}
+function rivPill(g){const lab=g.riv||(LIVE.games[g.id]||{}).rivalry;return lab?`<span class="pill riv" title="Rivalry tag only — does not change projections">${esc(lab)}</span>`:''}
+async function loadRecaps(){if(LIVE.recaps._)return;try{LIVE.recaps=await fetch('https://raw.githubusercontent.com/mkuritz/nhl-lab/live/recaps.json?t='+Date.now()).then(r=>r.json());LIVE.recaps._=1}catch(e){LIVE.recaps={players:{}}}}
+function startLivePoll(){if(startLivePoll._)return;startLivePoll._=1;pullLive().then(()=>{const v=(location.hash.slice(1)||'slate').split('/')[0];if(v==='slate'||v==='watch'||v==='goalies')route()});
+  setInterval(async()=>{const day=new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});const on=D.games.some(g=>g.date===day&&['FUT','PRE','LIVE','CRIT'].includes((LIVE.games[g.id]||g).state));if(!on&&Date.now()-LIVE.ts<600000)return;await pullLive();const v=(location.hash.slice(1)||'').split('/')[0];if(v==='slate'||v==='watch'||v==='goalies'||v==='schedule')route()},60000)}
 
 // ---------------- Fantasy ----------------
 const PRESETS={espn:{name:'ESPN standard points',src:'https://www.espn.co.uk/fantasy/hockey/story/_/id/34491407/which-fantasy-hockey-league-right-you',
@@ -309,11 +363,11 @@ if(tab==='scoring'){const p=ls.get('fpreset','espn'),cv=SC();h+=`<div class="car
 return h}
 
 async function route(){const [v,arg,arg2]=(location.hash.slice(1)||'slate').split('/');document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v||(v==='team'&&a.dataset.t===arg)));document.body.classList.remove('navopen');
-const el=$('#app');try{const html=v==='player'?await player(arg):v==='team'?team(arg,arg2):({slate,schedule,teams,players,war,h2h,goalies,method,hot,watch,matchups,lines,news,fantasy}[v]||slate)();el.innerHTML=html;sortable(el)}catch(e){console.error(e);el.innerHTML='<div class="card r">Something went wrong rendering this view.</div>'}
+const el=$('#app');try{const html=v==='player'?await player(arg):v==='team'?team(arg,arg2):v==='watch'?await watch():({slate,schedule,teams,players,war,h2h,goalies,method,hot,matchups,lines,news,fantasy}[v]||slate)();el.innerHTML=html;sortable(el)}catch(e){console.error(e);el.innerHTML='<div class="card r">Something went wrong rendering this view.</div>'}
 if(v!==route._v)scrollTo(0,0);route._v=v}
 (async()=>{
 try{D.meta=await J('data/meta.json');$('#badge').textContent='Data updated '+D.meta.updatedET;
 const ks=['teams','games','players','slate','model','goalies','hot','grades','teamx','lines','news','fantasy'];const r=await Promise.all([...ks.map(k=>J(`data/${k}.json`)),J('data/h2h_flags.json')]);ks.forEach((k,i)=>D[k]=r[i]);D.h2h=r[ks.length];
-buildNav();drawMode();addEventListener('hashchange',route);route()}catch(e){console.error(e);$('#app').innerHTML='<div class="card r">Could not load data.</div>'}})();
+buildNav();drawMode();addEventListener('hashchange',route);route();startLivePoll()}catch(e){console.error(e);$('#app').innerHTML='<div class="card r">Could not load data.</div>'}})();
 </script><div class="sl-credit" style="clear:both;text-align:center;font-size:12px;opacity:.6;padding:18px 12px 22px;line-height:1.5">NHL Lab · A <a href="https://mkuritz.github.io/sports-labs/" style="color:inherit;text-decoration:underline">Sports Labs</a> Product · Property of Michael Kuritz · <a href="#" data-lead="contact" style="color:inherit;text-decoration:underline">Contact</a> · <a href="#" data-lead="support" style="color:inherit;text-decoration:underline">Support</a></div>
 <script src="https://mkuritz.github.io/sports-labs/js/leads-config.js"></script><script src="https://mkuritz.github.io/sports-labs/js/leads.js" data-product="NHL Lab" data-float="1"></script></body></html>

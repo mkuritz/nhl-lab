@@ -96,3 +96,21 @@ def build_lines(team, g, posmap):
         u = [a] + mates; used |= set(u); units.append(dict(p=u, sec=pp[a]))
     return dict(gid=g["gid"], date=g["date"], opp=g["away"] if g["home"] == team else g["home"], F=lines, D=pairs, PP=units,
                 ppTotal=max(pp.values(), default=0))
+
+def merge_games(team, games, weights=(1.0, 0.5, 0.25), exclude=()):
+    """Weighted blend of the team's most recent games (newest first) so one in-game shuffle doesn't flip the lines.
+    exclude = player ids known unavailable (injured/out or no longer on the roster)."""
+    acc = dict(ev={}, pp={}, toi={}, pev={}, ppp={})
+    base = None
+    ex = {str(p) for p in exclude}
+    for w, g in zip(weights, games):
+        t = (g or {}).get("teams", {}).get(team)
+        if not t: continue
+        base = base or g
+        for k in acc:
+            for key, v in t[k].items():
+                if any(part in ex for part in str(key).split("-")): continue
+                acc[k][key] = acc[k].get(key, 0) + w * v
+    if not base: return None
+    acc = {k: {kk: int(round(vv)) for kk, vv in v.items()} for k, v in acc.items()}
+    return dict(base, teams={team: acc})

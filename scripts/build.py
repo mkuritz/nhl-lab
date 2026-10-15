@@ -70,6 +70,8 @@ for season, key in ((SEASON, "cur"), (PREV, "prev")):
             pk=r3(r["penaltyKillPct"]), fo=r3(r["faceoffWinPct"]))
 
 # ---------------- schedules ----------------
+import sys; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rivalries import tag as RIV
 def sched(ab): return ab, get(f"{W}/club-schedule-season/{ab}/{SEASON}")
 GAMES = {}
 for ab, d in pmap(sched, ABBRS):
@@ -84,7 +86,8 @@ for g in sorted(GAMES.values(), key=lambda g: g["startTimeUTC"]):
     games.append(dict(id=g["id"], date=t.date().isoformat(), time=t.strftime("%-I:%M %p"), away=a["abbrev"], home=h["abbrev"],
         state=g["gameState"], venue=g.get("venue", {}).get("default"), as_=a.get("score") if fin or g["gameState"] in ("LIVE","CRIT") else None,
         hs=h.get("score") if fin or g["gameState"] in ("LIVE","CRIT") else None,
-        end=(g.get("gameOutcome") or {}).get("lastPeriodType") if fin else None))
+        end=(g.get("gameOutcome") or {}).get("lastPeriodType") if fin else None,
+        riv=(RIV(a["abbrev"], h["abbrev"]) or {}).get("label")))
 # rest days / back-to-backs
 last = {}
 for g in games:
@@ -554,6 +557,7 @@ for ab in ABBRS:
     else: gap = None
     goalies[ab] = dict(order=order, gap=gap)
 gproj = [dict(gid=gid, team=ab, goalie=st["name"] if st else None, gid_=st["id"] if st else None, sv=st["sv"] if st else None, why=why, backup=backup,
+              status="Projected", source="Sports Labs model (starts, back-to-backs, ESPN injuries)", asOf=NOW.isoformat(timespec="minutes"),
               date=next(g["date"] for g in upcoming if g["id"] == gid)) for (gid, ab), (st, why, backup) in goalie_proj.items()]
 
 
@@ -689,26 +693,35 @@ finals = [g for g in games if g["state"] in ("OFF", "FINAL")]
 need = {}
 for ab in ABBRS:
     if TARGET and ab not in TARGET and os.path.exists(os.path.join(DATA, "lines.json")): continue
-    tg = [g for g in finals if ab in (g["home"], g["away"])][-2:]
+    tg = [g for g in finals if ab in (g["home"], g["away"])][-4:]
     for g in tg: need.setdefault(g["id"], []).append(ab)
 gl_res = dict(zip(need, pmap(lambda gid: LN.game_lines(gid, get, SHC), list(need), 6)))
 posmap = {pid: p["pos"] for pid, p in PL.items()}
 prev_lines = json.load(open(os.path.join(DATA, "lines.json"))) if os.path.exists(os.path.join(DATA, "lines.json")) else {}
 LINES = {}
 for ab in ABBRS:
-    tg = [g for g in finals if ab in (g["home"], g["away"])][-2:]
+    tg = [g for g in finals if ab in (g["home"], g["away"])][-4:]
     if not any(g["id"] in gl_res for g in tg):
         if ab in prev_lines: LINES[ab] = prev_lines[ab]
         continue
-    built = []
+    res = []
     for g in tg:
         r = gl_res.get(g["id"]) or (LN.game_lines(g["id"], get, SHC) if g["id"] not in gl_res else None)
         if r:
             for k, v in r["names"].items(): posmap.setdefault(int(k), "F")
-            b = LN.build_lines(ab, r, posmap)
-            if b: b["names"] = {str(p): (PL[p]["name"] if p in PL else r["names"].get(str(p), str(p))) for grp in ("F", "D", "PP") for u in b[grp] for p in u["p"]}; built.append(b)
+            res.append(r)
+    # unavailable: ESPN injury status Out/IR, or no longer on this team's current roster
+    gone = {pid for pid, p in PL.items() if p["team"] == ab and p.get("inj") and str(p["inj"].get("status", "")).lower().startswith(("out", "injured", "ir"))}
+    gone |= {int(k) for r in res for k in r["teams"].get(ab, {}).get("toi", {}) if int(k) not in PL or PL[int(k)]["team"] != ab}
+    built = []
+    for i in range(len(res)):   # blended view as of each game: that game + up to 2 earlier (weights 1, .5, .25)
+        m = LN.merge_games(ab, list(reversed(res[max(0, i - 2):i + 1])), exclude=gone if i == len(res) - 1 else ())
+        b = LN.build_lines(ab, m, posmap) if m else None
+        if b: b["names"] = {str(p): (PL[p]["name"] if p in PL else m["names"].get(str(p), str(p))) for grp in ("F", "D", "PP") for u in b[grp] for p in u["p"]}; built.append(b)
     if not built: continue
     cur = built[-1]; prv = built[-2] if len(built) > 1 else None
+    cur["method"] = f"Shift charts, last {min(3, len(res))} games weighted 1/0.5/0.25; excludes {len(gone)} unavailable (injured or off roster)"
+    cur["builtAt"] = NOW.isoformat(timespec="minutes"); cur["excluded"] = sorted(gone)
     if prv:
         for grp in ("F", "D", "PP"):
             for i, u in enumerate(cur[grp]):
