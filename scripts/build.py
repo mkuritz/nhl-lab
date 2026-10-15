@@ -415,7 +415,7 @@ def project(pid, p, g, rates, detail=True):
                p3S=r3(pois_tail(3, ls_)), goalie=gl["name"] if gl else None, gsv=r3(gsv, 3), backup=backup)
     if not detail: return out
     if gl:
-        if backup: why.append(f"Opp goalie: {gwhy} ({gsv:.3f} shrunk SV%)")
+        if backup: why.append(f"Opp goalie: {gwhy}")
         elif g_f > 1.05: why.append(f"Faces {gl['name']} ({gsv:.3f} SV%, below league {LSV[SEASON]:.3f})")
         elif g_f < 0.95: why.append(f"Tough goalie: {gl['name']} ({gsv:.3f} SV%)")
     if ga_f > 1.08: why.append(f"{opp} allows {ga_f*LGA:.2f} GA/gm (blended) vs league {LGA:.2f}")
@@ -436,8 +436,8 @@ def project(pid, p, g, rates, detail=True):
     fo = rates.get("form")
     if fo and detail:
         mp = fo["mult"]["p"]
-        if mp >= 1.04: why.append(f"Hot form: {fo['obs']['p']:.2f} pts/gm last {fo['n']} (shrunk to {fo['shr']['p']:.2f}), x{mp:.2f}" + ("; " + "; ".join(fo["notes"]) if fo["notes"] else ""))
-        elif mp <= 0.96: why.append(f"Cold form: {fo['obs']['p']:.2f} pts/gm last {fo['n']}, x{mp:.2f}")
+        if mp >= 1.04: why.append("Hot form boost" + (("; " + "; ".join(fo["notes"])) if fo.get("notes") else ""))
+        elif mp <= 0.96: why.append("Cold form")
         elif fo["notes"]: why.append("Opportunity: " + "; ".join(fo["notes"]))
         out["form"] = fo["mult"]["p"]
     out["why"] = why; out["m"] = r3(m)
