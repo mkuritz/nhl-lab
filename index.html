@@ -36,7 +36,9 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 .pill.riv{background:#3a1a2e;border-color:#7a3a5a;color:#ff9ec0}.pill.ok{background:#0c2b20;border-color:#1d6b4c;color:var(--g)}.pill.proj{background:#2a2205;border-color:#6b5512;color:var(--y)}
 .wl-add{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px}.wl-add .dd{position:relative;flex:1;min-width:220px}.wl-add .dd ul{position:absolute;z-index:6;left:0;right:0;max-height:260px;overflow:auto;background:var(--p);border:1px solid var(--b);border-radius:8px;margin:4px 0 0;padding:0;list-style:none}.wl-add .dd li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--b)}.wl-add .dd li:hover{background:var(--p2)}.sug{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
 @media(max-width:640px){.grid{grid-template-columns:minmax(0,1fr)!important}.grid>*{min-width:0}.brand{display:none}.badge{display:none}main{padding:10px}th,td{padding:6px 5px}.hide-m{display:none}}
-</style><script src="slip.js?v=1"></script><script src="https://sportslabshq.com/sl/sl.js" defer></script>
+
+.np .cand{opacity:.55;filter:grayscale(.6)}.np .cand:hover{opacity:.85}.pill.edge{background:#22c55e;color:#04210f;font-weight:800}
+</style><script src="slip.js?v=2"></script><script src="https://sportslabshq.com/sl/sl.js" defer></script>
 </head><body>
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://sportslabshq.com/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
 <aside id="side"><nav id="nav"></nav></aside><div id="scrim" onclick="document.body.classList.remove('navopen')"></div><main id="app"><div class="card">Loading data…</div></main>
@@ -80,7 +82,11 @@ const more=L=>L.length>n?`<div style="text-align:center;margin-top:8px"><a class
 if(t==='goals'||t==='pts'||t==='shots'){const k={goals:'pG',pts:'pP',shots:'p3S'}[t],lab={goals:'to score',pts:'for a point',shots:'3+ shots'}[t];const L=[...R].sort((a,b)=>b[k]-a[k]);
  const E=[];if(t!=='shots')R.forEach(r=>{const b=k==='pG'?r.bG:r.bP,e=k==='pG'?r.eG:r.eP;if(b&&e>=.03)E.push(r)});E.sort((a,b)=>(k==='pG'?b.eG-a.eG:b.eP-a.eP));
  if(E.length)h+=`<h3>Edge picks</h3>${E.slice(0,8).map(r=>cand(r,k,lab)).join('')}`;
- h+=`<h3>Most likely ${day===new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})?'tonight':fmtD(day)}</h3>${L.slice(0,n).map(r=>cand(r,k,lab,k==='p3S'?`xSOG ${f(r.xs,1)}`:'')).join('')}`+more(L)}
+ const hasLine=r=>k==='pG'?!!r.bG:k==='pP'?!!r.bP:!!(window.slipHas&&slipHas(r,k)),LP=L.filter(hasLine),LN=L.filter(r=>!hasLine(r)),ex=r=>k==='p3S'?`xSOG ${f(r.xs,1)}`:'';
+ const when=day===new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})?'tonight':fmtD(day);
+ h+=`<h3>Most likely ${when} · priced</h3>${LP.slice(0,n).map(r=>cand(r,k,lab,ex(r))).join('')||'<p class="small m">No book prices posted yet for this list.</p>'}`;
+ const nn=Math.max(0,n-LP.length);if(nn&&LN.length)h+=`<h3 style="color:var(--m,#8b97b0)">Projections · no line yet</h3><div class="np">${LN.slice(0,nn).map(r=>cand(r,k,lab,ex(r))).join('')}</div>`;
+ h+=more(L)}
 else if(t==='streaks'){const ids=new Set(R.map(r=>r.pid)),H=(D.hot?.rows||D.hot||[]).filter(x=>ids.has(x.pid)&&x.ptStreak>=2).sort((a,b)=>b.ptStreak-a.ptStreak);
  h+=H.slice(0,n).map(x=>{const r=R.find(y=>y.pid===x.pid);return `<div>${starBtn(x.pid)}${pl(x.pid,x.name)} <span class="m small">${x.team} · ${r.home?'vs':'@'} ${r.opp} · ${pc(r.pP)} for a point</span> <b class="g" style="float:right">${x.ptStreak}-gm pt streak${x.gStreak>=2?' · '+x.gStreak+'G':''}</b>${res(r,'pP')}</div>`}).join('')||'<span class="m small">No active streaks on this slate.</span>';h+=more(H)}
 else{const S=LIVE.stats||{},done=R.filter(r=>S[r.pid]&&S[r.pid][3]===r.gid&&['OFF','FINAL'].includes((LIVE.games[r.gid]||D.games.find(g=>g.id===r.gid)||{}).state));
