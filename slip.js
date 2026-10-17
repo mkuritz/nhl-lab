@@ -7,7 +7,7 @@ const save=()=>{localStorage.setItem(LS,JSON.stringify(Q));bar()};
 fetch("https://betlab.sportslabshq.com/data/props_nhl.json?t="+Date.now()).then(r=>r.ok?r.json():[]).then(d=>{IDX={};(d||[]).forEach(p=>{IDX[nm(p.player)+"|"+p.market+"|"+p.line]=p});if(window.route)route();bar()}).catch(()=>{IDX={}});
 window.slipHas=function(r,k){const m=MK[k];return !!(m&&IDX&&IDX[nm(r.name)+"|"+m[0]+"|"+m[1]])};
 window.slipBtn=function(r,k){const m=MK[k];if(!m||!IDX)return"";const p=IDX[nm(r.name)+"|"+m[0]+"|"+m[1]];
- if(!p)return`<div class="small m" style="margin-top:4px">No line yet</div>`;const key=p.aid+"|"+p.market,on=Q.includes(key);
+ if(!p)return"";const key=p.aid+"|"+p.market,on=Q.includes(key);
  return`<button type="button" class="slbtn${on?" on":""}" data-slk="${key}" title="${on?"Remove from":"Add to"} bet slip">${on?"✓ In slip":"+ Add to bet slip"}</button>`};
 function link(){return"https://betlab.sportslabshq.com/index.html#slip="+encodeURIComponent(Q.map(k=>"nhl~"+k).join(","))+"&add=1"}
 function bar(){let b=document.getElementById("slbar");if(!b){b=document.createElement("a");b.id="slbar";b.target="_blank";b.rel="noopener";document.body.appendChild(b)}
