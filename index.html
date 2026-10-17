@@ -71,7 +71,7 @@ return `<div><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</
 <div class="card" style="grid-column:1/-1">${slTabs(R,day)}</div>
 <div class="card"><h3>Notable spots</h3>${notable(R)}</div></div>`;return h}
 function res(r,k){const x=(LIVE.stats||{})[r.pid];if(!x||x[3]!==r.gid)return'';const [g,a,sg]=x,L=LIVE.games[r.gid]||D.games.find(g=>g.id===r.gid)||{},fin=L.state==='OFF'||L.state==='FINAL',hit=k==='pG'?g>0:k==='p3S'?sg>=3:g+a>0;
-const txt=k==='p3S'?`${sg} SOG`:k==='pG'?`${g} G`:`${g+a} PTS (${g}G ${a}A)`;return `<div class="small ${hit?'g':fin?'r':'y'}" style="font-weight:700">${hit?'✓':fin?'✗':'●'} ${txt}${fin?'':' live'}</div>`}
+const gt=(x[4]||[]).join(', '),pt=g+a;const txt=k==='p3S'?`${sg} SOG`:k==='pG'?(g?`GOAL ${g}G · ${gt}`:`0 G · ${sg} SOG`):`${pt} PT${pt===1?'':'S'} (${g}G ${a}A)`;return `<div class="small ${hit?'g':fin?'r':'y'}" style="font-weight:700">${hit?'✓':fin?'✗':'●'} ${txt}${fin?'':' live'}</div>`}
 function slTabs(R,day){const t=ls.get('sltab','pts'),n=+ls.get('sln',25);const T=[['goals','Goals'],['pts','Points'],['shots','Shots'],['streaks','Streaks'],['hit','Hit rates']];
 let h=`<div class="filters">${T.map(([v,l])=>`<a class="pill" style="${v===t?'background:var(--a);color:#000':''}" onclick="ls.set('sltab','${v}');ls.set('sln',25);route()">${l}</a>`).join('')}</div>`;
 const more=L=>L.length>n?`<div style="text-align:center;margin-top:8px"><a class="pill" onclick="ls.set('sln',${n+25});route()">Show more (${L.length-n} left)</a></div>`:'';
