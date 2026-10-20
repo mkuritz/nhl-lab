@@ -84,7 +84,7 @@ if(t==='goals'||t==='pts'||t==='shots'){const k={goals:'pG',pts:'pP',shots:'p3S'
  if(E.length)h+=`<h3>Edge highlights</h3>${E.slice(0,8).map(r=>cand(r,k,lab)).join('')}`;
  const hasLine=r=>k==='pG'?!!r.bG:k==='pP'?!!r.bP:!!(window.slipHas&&slipHas(r,k)),LP=L.filter(hasLine),LN=L.filter(r=>!hasLine(r)),ex=r=>k==='p3S'?`xSOG ${f(r.xs,1)}`:'';
  const when=day===new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})?'tonight':fmtD(day);
- h+=`<h3>Most likely ${when} · priced</h3>${LP.slice(0,n).map(r=>cand(r,k,lab,ex(r))).join('')||'<p class="small m">No book prices posted yet for this list.</p>'}`;
+ h+=`<h3>Most likely ${when}${LP.slice(0,n).length?' · priced':''}</h3>${LP.slice(0,n).map(r=>cand(r,k,lab,ex(r))).join('')||'<p class="small m">No book prices posted yet for this list.</p>'}`;
  const nn=Math.max(10,n-LP.length);if(nn&&LN.length)h+=`<h3 style="color:var(--m,#8b97b0)">Projections · no line yet</h3><div class="np">${LN.slice(0,nn).map(r=>cand(r,k,lab,ex(r))).join('')}</div>`;
  h+=more(L)}
 else if(t==='streaks'){const ids=new Set(R.map(r=>r.pid)),H=(D.hot?.rows||D.hot||[]).filter(x=>ids.has(x.pid)&&x.ptStreak>=2).sort((a,b)=>b.ptStreak-a.ptStreak);
