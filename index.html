@@ -44,7 +44,7 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 <aside id="side"><nav id="nav"></nav></aside><div id="scrim" onclick="document.body.classList.remove('navopen')"></div><main id="app"><div class="card">Loading data…</div></main>
 <script>
 const sanitizeWhy=w=>String(w??'').replace(/\s*[×x]\s?\d+(\.\d+)?/g,'').replace(/\s*\((?:[+−-]?\d+(\.\d+)?%?\s*(?:wt|weight|boost)?)\)/gi,'').replace(/\s{2,}/g,' ').trim();
-const LS='nhllab:',V=[['slate','Daily Slate'],['analyst','🎙️ Sports Analyst'],['hot','🔥 Hottest Players'],['watch','★ Watchlist'],['matchups','Matchups'],['fantasy','🏆 Fantasy'],['teams','Teams'],['players','Players'],['lines','Lines'],['news','News'],['war','WAR'],['h2h','H2H Flags'],['goalies','Goalies'],['schedule','Schedule']];
+const LS='nhllab:',V=[['slate','Daily Slate'],['analyst','🎙️ Sports Analyst'],['hot','🔥 Hottest Players'],['watch','★ Watchlist'],['matchups','Matchups'],['fantasy','🏆 Fantasy'],['teams','Teams'],['players','Players'],['lines','Lines'],['news','News'],['war','WAR'],['h2h','H2H Flags'],['goalies','Goalies'],['goaliemap','🥅 Goalie Matchup'],['shotmap','🎯 Shot Map'],['schedule','Schedule']];
 const D={},$=s=>document.querySelector(s),pc=x=>x==null?'–':(x*100).toFixed(0)+'%',f=(x,n=2)=>x==null?'–':(+x).toFixed(n),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(LS+k))??d}catch(e){return d}},set:(k,v)=>localStorage.setItem(LS+k,JSON.stringify(v))};
 const logo=a=>D.teams[a]?`<img loading="lazy" decoding="async" class="tlogo" src="${D.teams[a].logo}" alt="">`:'';
@@ -164,6 +164,7 @@ async function player(id){let p=null;try{p=await J(`data/players/${id}.json`)}ca
  let h=`<div class="card hero"><img loading="lazy" decoding="async" src="${esc(p.head||'')}" onerror="this.style.visibility='hidden'" alt=""><div><h2 style="margin:0">${esc(p.name)} <span class="m">#${p.num??''}</span> ${starBtn(p.id)}</h2>
  <div class="m">${tm(p.team)} · ${esc(p.pos)}${p.shoots?' · '+(G?'Catches ':'Shoots ')+esc(p.shoots):''}${p.age?' · '+p.age+' yrs':''}${p.draft?` · Drafted ${p.draft.year} R${p.draft.round} #${p.draft.overallPick}`:''}</div>
  ${p.inj?`<div class="r small" style="margin-top:4px"><b>${esc(p.inj.status||'Injured')}</b>${p.inj.note?': '+esc(p.inj.note):''}</div>`:'<div class="small m" style="margin-top:4px">No injury designation listed</div>'}</div></div>`;
+ h+=smLink(p);
  if(!all.length&&!(c.gp||pv.gp))return h+'<div class="card"><p class="m">Not enough data yet: no NHL games logged for this player this season or last.</p></div>';
  if(!G){const win=n=>{const a=log.slice(0,n);if(!a.length)return null;const s=k=>a.reduce((t,r)=>t+(r[k]||0),0);return{n:a.length,g:s(5),a:s(6),s:s(7),ppp:s(8),toi:s(9)/a.length/60,pm:s(10)}};
   const L5=win(5),L10=win(10),base=c.gp>=5?c:(pv.gp?pv:c),bg=base.gp||1,bl=base===c?'Season':'Last season';
@@ -391,8 +392,10 @@ function linkNames(root){if(!D.players)return;if(!linkNames.M){linkNames.M={};D.
  L.forEach(t=>{const v=t.nodeValue,m=/^(\s*)([A-ZÀ-Ž][\wÀ-ž.'’-]*(?:\s+[A-ZÀ-Ž][\wÀ-ž.'’-]*){1,3})/.exec(v);if(!m)return;const ws=m[2].split(/\s+/);for(let k=ws.length;k>=2;k--){const nm=ws.slice(0,k).join(' '),c=M[nm.toLowerCase()];if(!c)continue;const after=v.charAt(m[1].length+nm.length);if(after&&/[A-Za-z]/.test(after))continue;
   let x=c.length==1?c[0]:null;if(!x){const row=t.parentElement.closest('tr,div');const tt=row?row.textContent:'';x=c.find(p=>tt.includes(p.team))||null}if(!x)return;
   const r=t.splitText(m[1].length);r.nodeValue=r.nodeValue.slice(nm.length);const a=document.createElement('a');a.href='#player/'+x.id;a.textContent=nm;r.parentNode.insertBefore(a,r);return}})}
+async function shotlab(v,arg){if(!window.NHLShot)await new Promise(r=>{const sc=document.createElement('script');sc.src='shotlab.js?v=1';sc.onload=sc.onerror=r;document.head.appendChild(sc)});if(!window.NHLShot)return '<div class="card m">Shot maps are unavailable right now.</div>';setTimeout(()=>{const el=$('#smbox');if(el)NHLShot(el,v==='goaliemap'?'g':'s',arg,{D})},0);return '<div id="smbox"><div class="card m">Loading shot map…</div></div>'}
+/* shotlab hook: player profile link */const smLink=p=>p&&p.id?`<div class="filters">${p.pos==='G'?`<a class="pill" href="#goaliemap/${p.id}">🥅 Goalie Matchup map ›</a>`:`<a class="pill" href="#shotmap/${p.id}">🎯 Shot Map ›</a>`}</div>`:'';
 async function route(){if(!D.teams)return;const [v,arg,arg2]=(location.hash.slice(1)||'slate').split('/');document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v||(v==='team'&&a.dataset.t===arg)));document.body.classList.remove('navopen');
-const el=$('#app');try{const html=v==='player'?await player(arg):v==='team'?team(arg,arg2):v==='watch'?await watch():v==='analyst'?await analyst():({slate,schedule,teams,players,war,h2h,goalies,method,hot,matchups,lines,news,fantasy}[v]||slate)();el.innerHTML=html;sortable(el);try{linkNames(el)}catch(e){}}catch(e){console.error(e);el.innerHTML='<div class="card r">Something went wrong rendering this view.</div>'}
+const el=$('#app');try{const html=(v==='goaliemap'||v==='shotmap')?await shotlab(v,arg):v==='player'?await player(arg):v==='team'?team(arg,arg2):v==='watch'?await watch():v==='analyst'?await analyst():({slate,schedule,teams,players,war,h2h,goalies,method,hot,matchups,lines,news,fantasy}[v]||slate)();el.innerHTML=html;sortable(el);try{linkNames(el)}catch(e){}}catch(e){console.error(e);el.innerHTML='<div class="card r">Something went wrong rendering this view.</div>'}
 if(v!==route._v)scrollTo(0,0);route._v=v}
 (async()=>{
 try{D.meta=await J('data/meta.json');$('#badge').textContent='Data updated '+D.meta.updatedET;
