@@ -39,6 +39,17 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 @media(max-width:640px){.grid{grid-template-columns:minmax(0,1fr)!important}.grid>*{min-width:0}.brand{display:none}.badge{display:none}main{padding:10px}th,td{padding:6px 5px}.hide-m{display:none}}
 
 .np .cand{opacity:.55;filter:grayscale(.6)}.np .cand:hover{opacity:.85}.pill.edge{background:#22c55e;color:#04210f;font-weight:800}
+.game-strip{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;margin-bottom:10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.game-strip a{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--m);font-size:12px;font-weight:700;white-space:nowrap}
+.game-strip a.on{background:var(--a);color:#000;border-color:var(--a)}
+.mp-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.mp-pill{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;padding:1.5px 7px;border-radius:99px;border:1px solid var(--b);background:#16203a;color:#c7d7fe;white-space:nowrap}
+.mp-pill.pp1{background:#2c2206;border-color:#85640e;color:var(--y)}
+.mp-pill.ev1{background:#0f293d;border-color:#1f5882;color:var(--a)}
+.mp-pill.xg{background:#1c1638;border-color:#4b398f;color:#d2beff}
+.mp-pill.soft{background:#0c2b20;border-color:#1d6b4c;color:var(--g)}
+.mp-pill.tough{background:#34111b;border-color:#702237;color:var(--r)}
+.mp-pill.pk{background:#122e24;border-color:#246950;color:#6ee7b7}
 </style><script src="slip.js?v=3"></script><script src="https://sportslabshq.com/sl/sl.js" defer></script>
 <script src="sl-sports.js"></script><script src="/sl-neutral.js" defer></script></head><body>
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://sportslabshq.com/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
@@ -61,10 +72,12 @@ const td=(v,s)=>`<td${s!=null?` data-v="${s}"`:''}>${v}</td>`;
 
 function slate(){const s=D.slate,days=s.days,TD=new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});let day=ls.get('day',days.includes(TD)?TD:days[0]);if(!days.includes(day))day=days.includes(TD)?TD:days[0];const rel=d=>{const x=(new Date(d+'T12:00')-new Date(TD+'T12:00'))/864e5;return x===-1?'Yesterday':x===0?'Today':x===1?'Tomorrow':fmtD(d)};
 const gs=D.games.filter(g=>g.date===day),rows=s.rows.filter(r=>r.date===day);const pos=ls.get('slpos','all');
-const R=rows.filter(r=>pos==='all'||(pos==='D'?r.pos==='D':r.pos!=='D'));
+let gflt=ls.get('slgid','all');if(gflt!=='all'&&!gs.some(g=>String(g.id)===String(gflt)))gflt='all';
+const R=rows.filter(r=>(pos==='all'||(pos==='D'?r.pos==='D':r.pos!=='D'))&&(gflt==='all'||String(r.gid)===String(gflt)));
 const gq=s.goalies.filter(g=>g.date===day);
-let h=`<h2>Daily Slate</h2><div class="filters">${days.map(d=>`<a class="pill" style="${d===day?'background:var(--a);color:#000':''}" onclick="ls.set('day','${d}');route()">${rel(d)}</a>`).join('')}
-<select onchange="ls.set('slpos',this.value);route()">${[['all','All skaters'],['F','Forwards'],['D','Defense']].map(([v,l])=>`<option value="${v}"${v===pos?' selected':''}>${l}</option>`).join('')}</select></div>
+const gStrip=gs.length?`<div class="game-strip" role="group" aria-label="Filter by game"><a class="${gflt==='all'?'on':''}" onclick="ls.set('slgid','all');route()">All Games (${gs.length})</a>${gs.map(g=>{const L=liveG(g),sc=L.hs!=null||L.as_!=null;return `<a class="${String(gflt)===String(g.id)?'on':''}" onclick="ls.set('slgid','${g.id}');route()">${logo(g.away)}${g.away} @ ${logo(g.home)}${g.home} <span style="opacity:.75;font-weight:600">${sc?(L.as_??0)+'-'+(L.hs??0):g.time}</span></a>`}).join('')}</div>`:'';
+let h=`<h2>Daily Slate</h2><div class="filters">${days.map(d=>`<a class="pill" style="${d===day?'background:var(--a);color:#000':''}" onclick="ls.set('day','${d}');ls.set('slgid','all');route()">${rel(d)}</a>`).join('')}
+<select onchange="ls.set('slpos',this.value);route()">${[['all','All skaters'],['F','Forwards'],['D','Defense']].map(([v,l])=>`<option value="${v}"${v===pos?' selected':''}>${l}</option>`).join('')}</select>${gflt!=='all'?`<a class="pill" onclick="ls.set('slgid','all');route()">✕ Clear game filter</a>`:''}</div>${gStrip}
 <div class="grid"><div class="card" style="grid-column:1/-1"><h3>Games (${gs.length})</h3><div class="grid">${gs.map(g=>{const ga=gq.find(x=>x.gid===g.id&&x.team===g.away),gh=gq.find(x=>x.gid===g.id&&x.team===g.home);
 const gl=x=>x?`${x.gid_?pl(x.gid_,x.goalie):'?'} <span class="m">${f(x.sv,3)}</span>${x.backup?' <span class="pill bk">BACKUP/ALT</span>':''}`:'–';
 const L=liveG(g);const Ga=gStatus(ga||{gid:g.id,team:g.away}),Gh=gStatus(gh||{gid:g.id,team:g.home});
@@ -72,7 +85,7 @@ const gl2=x=>{if(!x||!x.goalie)return'–';const st=x.status||'Projected';return
 const score=L.hs!=null||L.as_!=null;const live=score&&L.state!=='OFF'&&L.state!=='FINAL';
 return `<div><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${rivPill(g)} ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
 <div class="small m">${score?`<b class="${live?'y':'g'}">${L.state==='OFF'||L.state==='FINAL'?'Final':(L.detail||('P'+(L.period||'')+' '+ (L.clock||'Live')))}</b>: ${g.away} <b>${L.as_??0}</b> – ${g.home} <b>${L.hs??0}</b>${L.sogA!=null?` · SOG ${L.sogA}-${L.sogH}`:''}`:`Goalies: ${gl2(Ga)} vs ${gl2(Gh)}`}</div></div>`}).join('')||'<span class="m">No games.</span>'}</div>
-<p class="small m">Scores refresh about every minute during games (live scoreboard feed). Goalies: <span class="pill ok">Confirmed</span> = NHL boxscore starter or Daily Faceoff confirmed; <span class="pill proj">Projected</span> = our model (starts, B2B, injury report). Rivalry tags are labels only — they do not move projections.</p></div>
+<p class="small m">Scores refresh about every minute during games (live scoreboard feed). Goalies: <span class="pill ok">Confirmed</span> = NHL boxscore starter or morning-skate confirmed; <span class="pill proj">Projected</span> = our model (starts, B2B, injury report). Rivalry tags are labels only — they do not move projections.</p></div>
 <div class="card" style="grid-column:1/-1">${slTabs(R,day)}</div>
 <div class="card"><h3>Notable spots</h3>${notable(R)}</div></div>`;return h}
 function res(r,k){const x=(LIVE.stats||{})[r.pid];if(!x||x[3]!==r.gid)return'';const [g,a,sg]=x,L=LIVE.games[r.gid]||D.games.find(q=>q.id===r.gid)||{},fin=L.state==='OFF'||L.state==='FINAL',hit=k==='pG'?g>0:k==='p3S'?sg>=3:g+a>0;
@@ -104,8 +117,37 @@ function mkt(r,k){const q=MKT.rows[k==='pG'?`nhl|Anytime Goal|${nmk(r.name)}|`:`
 function mine(r,k){return k==='pG'?(r.pGm??r.pG):r[k]}
 function bk(r,k){if(k!=='pG'&&k!=='pP')return'';const m=mkt(r,k),o=mine(r,k),e=m&&m.fair!=null?Math.round((o-m.fair)*1000)/10:null,am=x=>x==null?'—':(x>0?'+':'')+x;
  return `<div class="ovb"><div><span>Sports Labs model chance</span><b>${pc(o)}</b></div><div><span>Book fair chance</span><b>${m&&m.fair!=null?pc(m.fair):'—'}</b></div><div><span>Best price</span><b>${m&&m.best!=null?am(m.best)+' <small>'+esc(m.book||'')+'</small>':'—'}</b></div><div><span>Edge</span><b class="${e==null?'':e>=0?'g':'r'}">${e==null?'—':(e>0?'+':'')+e.toFixed(1)+' pts'}</b></div>${m&&m.t?`<em>Market as of ${etT(m.t)}</em>`:''}</div>`}
+function mpBadges(r){
+  const out=[];
+  const pp=r.pp_unit||((r.chips||[]).some(c=>/PP1/.test(c))?'PP1':(r.chips||[]).some(c=>/PP2/.test(c))?'PP2':null);
+  const ev=r.ev_line||((r.chips||[]).some(c=>/Line 1/.test(c))?'L1':(r.chips||[]).some(c=>/Line 2/.test(c))?'L2':null);
+  if(pp==='PP1')out.push(`<span class="mp-pill pp1" title="Locked on 1st Power-Play Unit${r.pp_toi?' ('+f(r.pp_toi,1)+' PP min/gm)':''}">🔥 PP1 Lock${r.pp_toi?' · '+f(r.pp_toi,1)+'m':''}</span>`);
+  else if(pp==='PP2')out.push(`<span class="mp-pill" title="2nd Power-Play Unit">PP2 Unit</span>`);
+  if(ev==='L1'||ev==='D1')out.push(`<span class="mp-pill ev1" title="Top Even-Strength Unit">${ev==='L1'?'⚡ L1 Even-Strength':'⚡ Pair 1 EV'}</span>`);
+  else if(ev)out.push(`<span class="mp-pill" title="Even-Strength Line">${esc(ev)} EV</span>`);
+  const fxg=r.flurry_xg!=null?r.flurry_xg:r.pG?Math.round((-Math.log(Math.max(0.02,1-Math.min(0.92,r.pGm||r.pG)))*0.88+(r.xs||2.2)*0.0114)*100)/100:null;
+  if(fxg!=null)out.push(`<span class="mp-pill xg" title="MoneyPuck-style Flurry-Adjusted Expected Goals (discounts rapid rebound flurries)">🎯 Flurry-Adj xG ${f(fxg,2)}</span>`);
+  if(r.goalie){
+    const gln=r.goalie.split(' ').slice(-1)[0];
+    const gx=r.g_gsax,gsv=r.g_sv??r.gsv;
+    const isSoft=(gx!=null&&gx<=-1.2)||(gsv!=null&&gsv<=0.891)||r.backup;
+    const isTough=gx!=null&&gx>=2.2&&gsv>=0.910&&!r.backup;
+    const cls=isSoft?'soft':isTough?'tough':'';
+    const gxTxt=gx!=null?`L10 ${gx>0?'+':''}${f(gx,1)} GSAx`:'';
+    const svTxt=gsv!=null?`${f(gsv,3)} SV%`:'';
+    const det=[gxTxt,svTxt,isSoft?(r.backup?'Backup Edge':'Soft Goalie Edge'):isTough?'Tough Goalie':''].filter(Boolean).join(' · ');
+    out.push(`<span class="mp-pill ${cls}" title="Opposing goalie last-10 starts Goals Saved Above Expected & SV%">🥅 vs ${esc(gln)}${det?' · '+det:''}</span>`);
+  }
+  if(r.pk_rank!=null&&(r.pk_rank>=21||pp==='PP1')){
+    const vuln=r.pk_rank>=22;
+    if(vuln||(pp==='PP1'&&r.pk_rank>=16)){
+      out.push(`<span class="mp-pill ${vuln?'pk':''}" title="Opponent Penalty Kill league rank (32 = most vulnerable PK)">vs #${r.pk_rank} PK${r.pk_pct!=null?' ('+pc(r.pk_pct)+')':''}</span>`);
+    }
+  }
+  return out.length?`<div class="mp-badges">${out.join('')}</div>`:'';
+}
 function cand(r,k,lab,extra=''){return `<div class="cand"><img loading="lazy" src="https://assets.nhle.com/mugs/nhl/latest/${r.pid}.png" onerror="this.style.visibility='hidden'" alt="">
-<div style="min-width:0"><b>${pl(r.pid,r.name)}</b> <span class="m small">${r.team} ${r.pos} · ${r.home?'vs':'@'} ${r.opp}</span>${(r.h2hNotes||[]).map(n=>`<span class="pill ${KL[n.kind][1]}">${KL[n.kind][0]}</span>`).join('')}${r.backup?'<span class="pill bk">vs backup</span>':''}
+<div style="min-width:0"><b>${pl(r.pid,r.name)}</b> <span class="m small">${r.team} ${r.pos} · ${r.home?'vs':'@'} ${r.opp}</span>${(r.h2hNotes||[]).map(n=>`<span class="pill ${KL[n.kind][1]}">${KL[n.kind][0]}</span>`).join('')}${r.backup?'<span class="pill bk">vs backup</span>':''}${mpBadges(r)}
 ${(r.locked||(LIVE.stats||{})[r.pid]?.[3]===r.gid)?"":r.chips?`<div class="chips">${r.chips.map(c=>`<span>${esc(c)}</span>`).join('')}${extra?`<span>${extra}</span>`:''}</div>`:`<ul class="why">${(r.why||[]).slice(0,3).map(w=>`<li>${esc(sanitizeWhy(w))}</li>`).join('')}${extra?`<li>${extra}</li>`:''}</ul>`}${bk(r,k)}</div><div class="pct">${pc(k==='pG'?mine(r,k):r[k])}<div class="small m">${(k==='pG'||k==='pP')?'model · ':''}${lab}</div>${res(r,k)}${window.slipBtn?slipBtn(r,k):""}${FM()?(()=>{const wk=FX().weeks.find(w=>w.start<=r.date&&r.date<=w.end),q=wk&&FX().sk[r.pid]?.w[wk.key];return q?`<div class="small y">~${f(fsk(q.c)/q.n,1)} FP/gm</div>`:''})():''}</div></div>`}
 function notable(R){const L=R.filter(r=>r.h2hNotes&&r.h2hNotes.length),B=R.filter(r=>r.backup&&r.pG>.3);let h='';
 h+=`<b class="y">H2H spots on this slate</b>`+(L.length?L.slice(0,14).map(r=>r.h2hNotes.map(n=>`<div class="small" style="margin:3px 0"><span class="pill ${KL[n.kind][1]}">${KL[n.kind][0]}</span> ${pl(r.pid,r.name)} ${r.home?'vs':'@'} ${r.opp}: ${esc(n.text.split(': ').slice(1).join(': '))}</div>`).join('')).join(''):'<div class="small m">None on this slate.</div>');
@@ -160,8 +202,8 @@ return `<h2>Head-to-Head Flags</h2><div class="filters"><select onchange="ls.set
 function goalies(){const A=Object.keys(D.goalies).sort();return `<h2>Goalie Context</h2><div class="card"><p class="small m">The starter order uses this season's starts, plus last season's as a tiebreak. Injury status comes from the injury report. SV% is stabilized toward league average so tiny samples don't swing the projections.</p>
 ${tbl(['Team','No. 1','SV%','GS','No. 2','SV%','GS','Gap','Injuries'],A.map(a=>{const o=D.goalies[a].order,g1=o[0]||{},g2=o[1]||{};const inj=o.filter(g=>g.inj).map(g=>`${esc(g.name)}: ${esc(g.inj.status)}`).join('; ');
 return `<tr>${td(tm(a),a)}${td(g1.id?pl(g1.id,g1.name):'–')}${td(f(g1.sv,3))}${td(g1.starts??'–')}${td(g2.id?pl(g2.id,g2.name):'–')}${td(f(g2.sv,3))}${td(g2.starts??'–')}${td(f(D.goalies[a].gap,3),D.goalies[a].gap??-1)}${td(inj?'<span class="r">'+inj+'</span>':'<span class="m">none listed</span>',inj)}</tr>`}))}</div>
-<div class="card"><h3>Projected starters, next slates</h3>${tbl(['Date','Team','Starter','Status','SV%','Source / reason'],D.slate.goalies.map(g=>{const L=gStatus(g);const st=L.status||g.status||'Projected';
-return `<tr>${td(fmtD(g.date),g.date)}${td(g.team)}${td((L.gid_||g.gid_?pl(L.gid_||g.gid_,L.goalie||g.goalie):esc(L.goalie||g.goalie||'–'))+(g.backup&&st!=='Confirmed'?' <span class="pill bk">ALT</span>':''))}${td(`<span class="pill ${st==='Confirmed'?'ok':'proj'}">${st}</span>`)}${td(f(g.sv,3))}<td class="l small">${esc(L.source||g.source||g.why||'')}${L.asOf||g.asOf?` · <span class="m">${esc((L.asOf||g.asOf||'').replace('T',' ').slice(0,16))} ET</span>`:''}</td></tr>`}))}</div>`}
+<div class="card"><h3>Projected starters, next slates</h3>${tbl(['Date','Team','Starter','Status','SV%','L10 SV%','L10 GSAx','Source / reason'],D.slate.goalies.map(g=>{const L=gStatus(g);const st=L.status||g.status||'Projected';const gx=g.l10_gsax;
+return `<tr>${td(fmtD(g.date),g.date)}${td(g.team)}${td((L.gid_||g.gid_?pl(L.gid_||g.gid_,L.goalie||g.goalie):esc(L.goalie||g.goalie||'–'))+(g.backup&&st!=='Confirmed'?' <span class="pill bk">ALT</span>':''))}${td(`<span class="pill ${st==='Confirmed'?'ok':'proj'}">${st}</span>`)}${td(f(g.sv,3))}${td(f(g.l10_sv??g.sv,3))}${td(gx==null?'–':`<span class="${gx>=1.5?'g':gx<=-1.5?'r':''}">${gx>0?'+':''}${f(gx,1)}</span>`,gx??0)}<td class="l small">${esc(L.source||g.source||g.why||'')}${L.asOf||g.asOf?` · <span class="m">${esc((L.asOf||g.asOf||'').replace('T',' ').slice(0,16))} ET</span>`:''}</td></tr>`}))}</div>`}
 
 function method(){return `<h2>About NHL Lab</h2><div class="card"><p>NHL Lab turns free public NHL data into daily player and team projections, refreshed through the day. Not betting advice. 21+.</p></div>`}
 // ---- Player profile: stats + trends (no betting probabilities) ----
@@ -210,7 +252,7 @@ function sugWatch(){const have=new Set(W());const out=[],seen=new Set();
   const push=(pid,why)=>{pid=+pid;if(!pid||have.has(pid)||seen.has(pid))return;seen.add(pid);const p=D.players.find(x=>x.id===pid);if(p)out.push({pid,name:p.name,team:p.team,pos:p.pos,why})};
   (D.hot||[]).filter(x=>x.hotScore!=null).slice(0,12).forEach(x=>push(x.pid,'Hottest'));
   (D.hot||[]).filter(x=>(x.oppNotes||[]).length).slice(0,8).forEach(x=>push(x.pid,'Role change'));
-  (D.slate?.rows||[]).slice(0,15).forEach(x=>push(x.pid,'Slate pick'));
+  (D.slate?.rows||[]).slice(0,15).forEach(x=>push(x.pid,'Slate highlight'));
   return out.slice(0,18)}
 function watchSearch(q){q=(q||'').toLowerCase().trim();if(q.length<2)return[];const have=new Set(W());
   return D.players.filter(x=>x.pos!=='G'||true).filter(x=>!have.has(x.id)&&x.name.toLowerCase().includes(q)).slice(0,20)}
