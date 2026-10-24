@@ -50,7 +50,7 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 .mp-pill.soft{background:#0c2b20;border-color:#1d6b4c;color:var(--g)}
 .mp-pill.tough{background:#34111b;border-color:#702237;color:var(--r)}
 .mp-pill.pk{background:#122e24;border-color:#246950;color:#6ee7b7}
-.nhl-gm-viz{margin-top:6px;padding:6px 8px;background:#0e1629;border:1px solid var(--b);border-radius:8px;font-size:11px}
+.nhl-gm-viz{margin-top:6px;padding:6px 8px;background:#0e1629;border:1px solid var(--b);border-radius:8px;font-size:11px;cursor:pointer;transition:border-color .15s,background .15s}.nhl-gm-viz:hover{border-color:var(--a);background:#131f3a}
 .nhl-gm-viz .ngv-hd{display:flex;justify-content:space-between;align-items:center;color:var(--m);font-size:10.5px;margin-bottom:3px}
 .nhl-gm-viz .ngv-hd b{color:var(--t)}
 .nhl-gm-viz .ngv-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:#080d1a;gap:2px;margin-bottom:5px}
@@ -66,7 +66,7 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 .nvs-track i.pp{background:#ffc857;height:100%;display:block}
 .nvs-therm{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#ff6b7a 0%,#ffc857 50%,#3ddc97 100%);overflow:visible}
 .nvs-therm u{position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;border-radius:2px;box-shadow:0 0 5px #000}
-</style><script src="slip.js?v=3"></script><script src="https://sportslabshq.com/sl/sl.js" defer></script>
+</style><script src="tailcard.js?v=1"></script><script src="slip.js?v=3"></script><script src="https://sportslabshq.com/sl/sl.js" defer></script>
 <script src="sl-sports.js"></script><script src="/sl-neutral.js" defer></script></head><body>
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://sportslabshq.com/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
 <aside id="side"><nav id="nav"></nav></aside><div id="scrim" onclick="document.body.classList.remove('navopen')"></div><main id="app"><div class="card">Loading data…</div></main>
@@ -105,11 +105,11 @@ const hStr=((th.gfpg||3.0)*0.6+((th.sfpg||29)/10)*0.4)*(1+(th.pp||0.2)-(ta.pk||0
 const aShare=Math.min(68,Math.max(32,Math.round(aStr/Math.max(0.1,aStr+hStr)*100))),hShare=100-aShare;
 const gxA=ga?.l10_gsax,gxH=gh?.l10_gsax;
 const gTherm=(ab,gx,sv)=>gx==null&&sv==null?'':`<span class="${(gx!=null&&gx<=-1.2)||(sv&&sv<=0.892)?'g':(gx!=null&&gx>=2.0)?'r':'m'}">${ab} G: ${gx!=null?(gx>0?'+':'')+f(gx,1)+' GSAx':''}${sv?' ('+f(sv,3)+')':''}</span>`;
-const gmViz=`<div class="nhl-gm-viz"><div class="ngv-hd"><span><b>${g.away} ${aShare}%</b> 5v5/PP1 xG Share</span><span><b>${hShare}% ${g.home}</b></span></div><div class="ngv-bar"><i class="a" style="width:${aShare}%"></i><i class="h" style="width:${hShare}%"></i></div>${(ga||gh)?`<div class="ngv-gsax">${gTherm(g.away,gxA,ga?.l10_sv??ga?.sv)}${gTherm(g.home,gxH,gh?.l10_sv??gh?.sv)}</div>`:''}</div>`;
+const gmViz=`<div class="nhl-gm-viz" data-nhl-gid="${g.id}" title="Tap to filter &amp; scroll to ${g.away} @ ${g.home} skater callouts"><div class="ngv-hd"><span><b>${g.away} ${aShare}%</b> 5v5/PP1 xG Share <span style="color:var(--a)">(Tap to Filter ↘)</span></span><span><b>${hShare}% ${g.home}</b></span></div><div class="ngv-bar"><i class="a" style="width:${aShare}%"></i><i class="h" style="width:${hShare}%"></i></div>${(ga||gh)?`<div class="ngv-gsax">${gTherm(g.away,gxA,ga?.l10_sv??ga?.sv)}${gTherm(g.home,gxH,gh?.l10_sv??gh?.sv)}</div>`:''}</div>`;
 return `<div style="background:var(--p2);border:1px solid var(--b);border-radius:10px;padding:9px 11px"><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${rivPill(g)} ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
 <div class="small m">${score?`<b class="${live?'y':'g'}">${L.state==='OFF'||L.state==='FINAL'?'Final':(L.detail||('P'+(L.period||'')+' '+ (L.clock||'Live')))}</b>: ${g.away} <b>${L.as_??0}</b> – ${g.home} <b>${L.hs??0}</b>${L.sogA!=null?` · SOG ${L.sogA}-${L.sogH}`:''}`:`Goalies: ${gl2(Ga)} vs ${gl2(Gh)}`}</div>${gmViz}</div>`}).join('')||'<span class="m">No games.</span>'}</div>
 <p class="small m">Scores refresh about every minute during games (live scoreboard feed). Goalies: <span class="pill ok">Confirmed</span> = NHL boxscore starter or morning-skate confirmed; <span class="pill proj">Projected</span> = our model (starts, B2B, injury report). Rivalry tags are labels only — they do not move projections.</p></div>
-<div class="card" style="grid-column:1/-1">${slTabs(R,day)}</div>
+<div class="card" id="nhl-skater-board" style="grid-column:1/-1">${slTabs(R,day)}</div>
 <div class="card"><h3>Notable spots</h3>${notable(R)}</div></div>`;return h}
 function res(r,k){const x=(LIVE.stats||{})[r.pid];if(!x||x[3]!==r.gid)return'';const [g,a,sg]=x,L=LIVE.games[r.gid]||D.games.find(q=>q.id===r.gid)||{},fin=L.state==='OFF'||L.state==='FINAL',hit=k==='pG'?g>0:k==='p3S'?sg>=3:g+a>0;
 const per=+L.period||0,clk=fin?'Final':(per?(per>3?'OT':'P'+per)+' '+(L.clock||''):'Live'),gt=(x[4]||[]).join(' · '),pr=fin?100:Math.min(100,Math.round(100*(per-1+0.5)/3));
@@ -178,7 +178,7 @@ function mpBadges(r){
 }
 function cand(r,k,lab,extra=''){return `<div class="cand"><img loading="lazy" src="https://assets.nhle.com/mugs/nhl/latest/${r.pid}.png" onerror="this.style.visibility='hidden'" alt="">
 <div style="min-width:0"><b>${pl(r.pid,r.name)}</b> <span class="m small">${r.team} ${r.pos} · ${r.home?'vs':'@'} ${r.opp}</span>${(r.h2hNotes||[]).map(n=>`<span class="pill ${KL[n.kind][1]}">${KL[n.kind][0]}</span>`).join('')}${r.backup?'<span class="pill bk">vs backup</span>':''}${mpBadges(r)}
-${(r.locked||(LIVE.stats||{})[r.pid]?.[3]===r.gid)?"":r.chips?`<div class="chips">${r.chips.map(c=>`<span>${esc(c)}</span>`).join('')}${extra?`<span>${extra}</span>`:''}</div>`:`<ul class="why">${(r.why||[]).slice(0,3).map(w=>`<li>${esc(sanitizeWhy(w))}</li>`).join('')}${extra?`<li>${extra}</li>`:''}</ul>`}${bk(r,k)}</div><div class="pct">${pc(k==='pG'?mine(r,k):r[k])}<div class="small m">${(k==='pG'||k==='pP')?'model · ':''}${lab}</div>${res(r,k)}${window.slipBtn?slipBtn(r,k):""}${FM()?(()=>{const wk=FX().weeks.find(w=>w.start<=r.date&&r.date<=w.end),q=wk&&FX().sk[r.pid]?.w[wk.key];return q?`<div class="small y">~${f(fsk(q.c)/q.n,1)} FP/gm</div>`:''})():''}</div></div>`}
+${(r.locked||(LIVE.stats||{})[r.pid]?.[3]===r.gid)?"":r.chips?`<div class="chips">${r.chips.map(c=>`<span>${esc(c)}</span>`).join('')}${extra?`<span>${extra}</span>`:''}</div>`:`<ul class="why">${(r.why||[]).slice(0,3).map(w=>`<li>${esc(sanitizeWhy(w))}</li>`).join('')}${extra?`<li>${extra}</li>`:''}</ul>`}${bk(r,k)}</div><div class="pct">${pc(k==='pG'?mine(r,k):r[k])}<div class="small m">${(k==='pG'||k==='pP')?'model · ':''}${lab}</div>${res(r,k)}<div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;margin-top:5px">${window.slipBtn&&slipBtn(r,k)?slipBtn(r,k):`<a class="sl-bl-btn" href="https://betlab.sportslabshq.com/?sport=nhl&amp;addleg=${encodeURIComponent(r.name+"|"+(k==="pG"?"Goals":k==="p3S"?"Shots on Goal":"Points"))}" target="_blank" rel="noopener">➕ Bet Lab</a>`}<button type="button" class="sl-tail-btn" data-nhl-tail="${r.pid}|${k}">📸 Card</button></div>${FM()?(()=>{const wk=FX().weeks.find(w=>w.start<=r.date&&r.date<=w.end),q=wk&&FX().sk[r.pid]?.w[wk.key];return q?`<div class="small y">~${f(fsk(q.c)/q.n,1)} FP/gm</div>`:''})():''}</div></div>`}
 function notable(R){const L=R.filter(r=>r.h2hNotes&&r.h2hNotes.length),B=R.filter(r=>r.backup&&r.pG>.3);let h='';
 h+=`<b class="y">H2H spots on this slate</b>`+(L.length?L.slice(0,14).map(r=>r.h2hNotes.map(n=>`<div class="small" style="margin:3px 0"><span class="pill ${KL[n.kind][1]}">${KL[n.kind][0]}</span> ${pl(r.pid,r.name)} ${r.home?'vs':'@'} ${r.opp}: ${esc(n.text.split(': ').slice(1).join(': '))}</div>`).join('')).join(''):'<div class="small m">None on this slate.</div>');
 h+=`<br><b class="r">Shooters facing a projected backup/alternate</b>`+(B.length?B.slice(0,10).map(r=>`<div class="small">${pl(r.pid,r.name)} vs ${r.goalie} — ${pc(r.pG)} to score</div>`).join(''):'<div class="small m">None.</div>');return h}
@@ -485,5 +485,43 @@ if(v!==route._v)scrollTo(0,0);route._v=v}
 try{D.meta=await J('data/meta.json');$('#badge').textContent='Data updated '+D.meta.updatedET;
 const ks=['teams','games','players','slate','model','goalies','hot','grades','teamx','lines','news','fantasy'];const r=await Promise.all([...ks.map(k=>J(`data/${k}.json`)),J('data/h2h_flags.json')]);ks.forEach((k,i)=>D[k]=r[i]);D.h2h=r[ks.length];
 buildNav();drawMode();addEventListener('hashchange',route);await loadMkt();route();setInterval(()=>loadMkt().then(()=>{const v=(location.hash.slice(1)||'slate').split('/')[0];if(v==='slate')route()}),300000);startLivePoll()}catch(e){console.error(e);$('#app').innerHTML='<div class="card r">Could not load data.</div>'}})();
+document.addEventListener('click',e=>{
+ const gv=e.target.closest('[data-nhl-gid]');
+ if(gv){
+  e.stopPropagation();
+  const gid=gv.getAttribute('data-nhl-gid');
+  ls.set('slgid',String(ls.get('slgid','all'))===String(gid)?'all':gid);
+  route();
+  setTimeout(()=>{const sb=document.getElementById('nhl-skater-board');if(sb)sb.scrollIntoView({behavior:'smooth',block:'start'})},60);
+  return;
+ }
+ const tb=e.target.closest('[data-nhl-tail]');
+ if(tb){
+  e.stopPropagation();
+  const [pid,k]=tb.getAttribute('data-nhl-tail').split('|');
+  const r=(D.slate?.rows||[]).find(x=>String(x.pid)===String(pid));
+  if(r&&window.SLTailCard){
+   const m=mkt(r,k);
+   const o=mine(r,k);
+   const mktLbl=k==='pG'?'Goals (1+)':k==='p3S'?'Shots on Goal (3+)':'Points (1+)';
+   const lnLbl=k==='p3S'?'2.5':'0.5';
+   const am=x=>x==null?'—':(x>0?'+':'')+x;
+   SLTailCard.show({
+    hub:'NHL LAB',
+    title:`${r.name} (${r.team} ${r.pos} ${r.home?'vs':'@'} ${r.opp})`,
+    sub:`Highlighted Skater Callout · ${mktLbl}${r.goalie?' · vs '+r.goalie:''}`,
+    rows:[{
+     player:r.name,market:mktLbl,line:lnLbl,
+     meta:`Model Chance: ${pc(o)} · xSOG ${f(r.xs||2.4,1)}${r.pp_unit?' · '+r.pp_unit:''}${r.g_gsax!=null?' · Opp G L10 '+(r.g_gsax>0?'+':'')+f(r.g_gsax,1)+' GSAx':''}`,
+     rightTop:m&&m.best!=null?`${am(m.best)} (${m.book||'Book A'})`:`Model ${pc(o)}`,
+     rightBot:m&&m.fair!=null?`Book Fair ${pc(m.fair)}`:'MoneyPuck Flurry-Adj xG'
+    }],
+    footerLeft:`Sports Labs NHL Model: ${pc(o)} (${mktLbl})`,
+    footerRight:'nhllab.sportslabshq.com · 21+',
+    filename:`nhllab-${r.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`
+   });
+  }
+ }
+});
 </script><div class="sl-credit" style="clear:both;text-align:center;font-size:12px;opacity:.6;padding:18px 12px 22px;line-height:1.5">NHL Lab · A <a href="https://sportslabshq.com/" style="color:inherit;text-decoration:underline">Sports Labs</a> Product · © 2026 Sports Labs · <a href="#" data-lead="contact" style="color:inherit;text-decoration:underline">Contact</a> · <a href="#" data-lead="support" style="color:inherit;text-decoration:underline">Support</a></div>
 <script src="https://sportslabshq.com/js/leads-config.js"></script><script src="https://sportslabshq.com/js/leads.js" data-product="NHL Lab" data-float="1"></script><script>/*last-updated*/(async()=>{let t=null;for(const u of["data/meta.json","data/games.json","data/slate.json",location.pathname]){try{const r=await fetch(u+"?lu="+Date.now(),{method:"HEAD",cache:"no-store"});if(r.ok&&r.headers.get("last-modified")){t=new Date(r.headers.get("last-modified"));break}}catch(e){}}if(!t)return;const d=document.createElement("div");d.textContent="Updated "+t.toLocaleString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+" ET";d.style.cssText="position:fixed;right:8px;bottom:8px;z-index:50;background:rgba(15,23,42,.85);color:#cbd5e1;font:600 11px system-ui;padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,.3);pointer-events:none";document.body.appendChild(d)})();</script></body></html>
