@@ -50,6 +50,22 @@ input,select{background:var(--p2);color:var(--t);border:1px solid var(--b);borde
 .mp-pill.soft{background:#0c2b20;border-color:#1d6b4c;color:var(--g)}
 .mp-pill.tough{background:#34111b;border-color:#702237;color:var(--r)}
 .mp-pill.pk{background:#122e24;border-color:#246950;color:#6ee7b7}
+.nhl-gm-viz{margin-top:6px;padding:6px 8px;background:#0e1629;border:1px solid var(--b);border-radius:8px;font-size:11px}
+.nhl-gm-viz .ngv-hd{display:flex;justify-content:space-between;align-items:center;color:var(--m);font-size:10.5px;margin-bottom:3px}
+.nhl-gm-viz .ngv-hd b{color:var(--t)}
+.nhl-gm-viz .ngv-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:#080d1a;gap:2px;margin-bottom:5px}
+.nhl-gm-viz .ngv-bar i.a{background:linear-gradient(90deg,#0284c7,#4fc3ff);border-radius:99px 0 0 99px;display:block}
+.nhl-gm-viz .ngv-bar i.h{background:linear-gradient(90deg,#059669,#3ddc97);border-radius:0 99px 99px 0;display:block}
+.nhl-gm-viz .ngv-gsax{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;padding-top:4px;border-top:1px dashed #1f2b49}
+.nhl-viz-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:6px;margin-top:6px;padding:6px 8px;background:#0e1629;border:1px solid var(--b);border-radius:8px;font-size:11px}
+.nvs-box{display:flex;flex-direction:column;gap:3px}
+.nvs-top{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--m)}
+.nvs-top b{color:var(--t)}
+.nvs-track{position:relative;height:6px;border-radius:99px;background:#080d1a;border:1px solid #1e2a48;overflow:hidden;display:flex}
+.nvs-track i.ev{background:#4fc3ff;height:100%;display:block}
+.nvs-track i.pp{background:#ffc857;height:100%;display:block}
+.nvs-therm{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#ff6b7a 0%,#ffc857 50%,#3ddc97 100%);overflow:visible}
+.nvs-therm u{position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;border-radius:2px;box-shadow:0 0 5px #000}
 </style><script src="slip.js?v=3"></script><script src="https://sportslabshq.com/sl/sl.js" defer></script>
 <script src="sl-sports.js"></script><script src="/sl-neutral.js" defer></script></head><body>
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://sportslabshq.com/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
@@ -83,8 +99,15 @@ const gl=x=>x?`${x.gid_?pl(x.gid_,x.goalie):'?'} <span class="m">${f(x.sv,3)}</s
 const L=liveG(g);const Ga=gStatus(ga||{gid:g.id,team:g.away}),Gh=gStatus(gh||{gid:g.id,team:g.home});
 const gl2=x=>{if(!x||!x.goalie)return'–';const st=x.status||'Projected';return `${x.gid_?pl(x.gid_,x.goalie):esc(x.goalie)} <span class="pill ${st==='Confirmed'?'ok':'proj'}" title="${esc((x.source||'')+' · '+(x.asOf||''))}">${st}</span>${x.backup?' <span class="pill bk">BACKUP/ALT</span>':''}`};
 const score=L.hs!=null||L.as_!=null;const live=score&&L.state!=='OFF'&&L.state!=='FINAL';
-return `<div><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${rivPill(g)} ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
-<div class="small m">${score?`<b class="${live?'y':'g'}">${L.state==='OFF'||L.state==='FINAL'?'Final':(L.detail||('P'+(L.period||'')+' '+ (L.clock||'Live')))}</b>: ${g.away} <b>${L.as_??0}</b> – ${g.home} <b>${L.hs??0}</b>${L.sogA!=null?` · SOG ${L.sogA}-${L.sogH}`:''}`:`Goalies: ${gl2(Ga)} vs ${gl2(Gh)}`}</div></div>`}).join('')||'<span class="m">No games.</span>'}</div>
+const ta=(D.teams[g.away]||{}).cur||{},th=(D.teams[g.home]||{}).cur||{};
+const aStr=((ta.gfpg||3.0)*0.6+((ta.sfpg||29)/10)*0.4)*(1+(ta.pp||0.2)-(th.pk||0.8)*0.5);
+const hStr=((th.gfpg||3.0)*0.6+((th.sfpg||29)/10)*0.4)*(1+(th.pp||0.2)-(ta.pk||0.8)*0.5)*1.04;
+const aShare=Math.min(68,Math.max(32,Math.round(aStr/Math.max(0.1,aStr+hStr)*100))),hShare=100-aShare;
+const gxA=ga?.l10_gsax,gxH=gh?.l10_gsax;
+const gTherm=(ab,gx,sv)=>gx==null&&sv==null?'':`<span class="${(gx!=null&&gx<=-1.2)||(sv&&sv<=0.892)?'g':(gx!=null&&gx>=2.0)?'r':'m'}">${ab} G: ${gx!=null?(gx>0?'+':'')+f(gx,1)+' GSAx':''}${sv?' ('+f(sv,3)+')':''}</span>`;
+const gmViz=`<div class="nhl-gm-viz"><div class="ngv-hd"><span><b>${g.away} ${aShare}%</b> 5v5/PP1 xG Share</span><span><b>${hShare}% ${g.home}</b></span></div><div class="ngv-bar"><i class="a" style="width:${aShare}%"></i><i class="h" style="width:${hShare}%"></i></div>${(ga||gh)?`<div class="ngv-gsax">${gTherm(g.away,gxA,ga?.l10_sv??ga?.sv)}${gTherm(g.home,gxH,gh?.l10_sv??gh?.sv)}</div>`:''}</div>`;
+return `<div style="background:var(--p2);border:1px solid var(--b);border-radius:10px;padding:9px 11px"><b>${tm(g.away)} @ ${tm(g.home)}</b> <span class="m">${g.time} ET</span> ${rivPill(g)} ${g.aB2B?'<span class="pill b2b">'+g.away+' B2B</span>':''}${g.hB2B?'<span class="pill b2b">'+g.home+' B2B</span>':''}
+<div class="small m">${score?`<b class="${live?'y':'g'}">${L.state==='OFF'||L.state==='FINAL'?'Final':(L.detail||('P'+(L.period||'')+' '+ (L.clock||'Live')))}</b>: ${g.away} <b>${L.as_??0}</b> – ${g.home} <b>${L.hs??0}</b>${L.sogA!=null?` · SOG ${L.sogA}-${L.sogH}`:''}`:`Goalies: ${gl2(Ga)} vs ${gl2(Gh)}`}</div>${gmViz}</div>`}).join('')||'<span class="m">No games.</span>'}</div>
 <p class="small m">Scores refresh about every minute during games (live scoreboard feed). Goalies: <span class="pill ok">Confirmed</span> = NHL boxscore starter or morning-skate confirmed; <span class="pill proj">Projected</span> = our model (starts, B2B, injury report). Rivalry tags are labels only — they do not move projections.</p></div>
 <div class="card" style="grid-column:1/-1">${slTabs(R,day)}</div>
 <div class="card"><h3>Notable spots</h3>${notable(R)}</div></div>`;return h}
@@ -144,7 +167,14 @@ function mpBadges(r){
       out.push(`<span class="mp-pill ${vuln?'pk':''}" title="Opponent Penalty Kill league rank (32 = most vulnerable PK)">vs #${r.pk_rank} PK${r.pk_pct!=null?' ('+pc(r.pk_pct)+')':''}</span>`);
     }
   }
-  return out.length?`<div class="mp-badges">${out.join('')}</div>`:'';
+  const ppShare=pp==='PP1'?34:pp==='PP2'?18:8;
+  const totW=Math.min(100,Math.max(18,Math.round(((fxg||0.28)/0.75)*100)));
+  const evW=Math.round(totW*(100-ppShare)/100),ppW=Math.max(3,totW-evW);
+  const gx=r.g_gsax,gsv=r.g_sv??r.gsv;
+  const edgeScore=gx!=null?Math.min(96,Math.max(6,Math.round(50-gx*8))):gsv!=null?Math.min(96,Math.max(6,Math.round(50+(0.903-gsv)*1400))):50;
+  const gln=r.goalie?r.goalie.split(' ').slice(-1)[0]:'Goalie';
+  const vizStrip=`<div class="nhl-viz-strip"><div class="nvs-box"><div class="nvs-top"><span>🎯 Slot/Flurry xG <b>${f(fxg||0.25,2)}</b></span><span><i style="color:#4fc3ff;font-style:normal">5v5</i> + <i style="color:#ffc857;font-style:normal">${pp||'EV'}</i> · <b>${f(r.xs||2.4,1)} xSOG</b></span></div><div class="nvs-track"><i class="ev" style="width:${evW}%"></i><i class="pp" style="width:${ppW}%"></i></div></div>${r.goalie?`<div class="nvs-box"><div class="nvs-top"><span>🥅 Crease Edge vs <b>${esc(gln)}</b></span><b class="${edgeScore>=60?'g':edgeScore<=40?'r':''}">${gx!=null?(gx>0?'+':'')+f(gx,1)+' GSAx':gsv?f(gsv,3)+' SV%':' Even'}</b></div><div class="nvs-therm" title="Shooter Crease Edge Thermometer (Right/Green = Soft Goalie Sieve Edge)"><u style="left:${edgeScore}%"></u></div></div>`:''}</div>`;
+  return (out.length?`<div class="mp-badges">${out.slice(0,3).join('')}</div>`:'')+vizStrip;
 }
 function cand(r,k,lab,extra=''){return `<div class="cand"><img loading="lazy" src="https://assets.nhle.com/mugs/nhl/latest/${r.pid}.png" onerror="this.style.visibility='hidden'" alt="">
 <div style="min-width:0"><b>${pl(r.pid,r.name)}</b> <span class="m small">${r.team} ${r.pos} · ${r.home?'vs':'@'} ${r.opp}</span>${(r.h2hNotes||[]).map(n=>`<span class="pill ${KL[n.kind][1]}">${KL[n.kind][0]}</span>`).join('')}${r.backup?'<span class="pill bk">vs backup</span>':''}${mpBadges(r)}
