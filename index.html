@@ -394,16 +394,18 @@ const AB_ESPN=Object.fromEntries(Object.entries(ESPN_AB).map(([a,b])=>[b,a]));
 const LIVE={games:{},goalies:{},recaps:{},ts:0};
 async function pullLive(){
   try{
-    const [espn,live]=await Promise.all([
-      fetch('https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard').then(r=>r.json()).catch(()=>null),
+    const [lsData,live]=await Promise.all([
+      (window.LR&&window.LR.data)?Promise.resolve(window.LR.data):fetch('https://betlab.sportslabshq.com/data/live_stats.json?t='+Math.floor(Date.now()/60000)).then(r=>r.ok?r.json():null).catch(()=>null),
       fetch('https://raw.githubusercontent.com/mkuritz/nhl-lab/live/live.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
     ]);
     if(live){live.games.forEach(g=>LIVE.games[g.id]=Object.assign(LIVE.games[g.id]||{},g));(live.goalies||[]).forEach(g=>LIVE.goalies[g.gid+'-'+g.team]=g);LIVE.src=live.updatedET;LIVE.stats=live.stats||{}}
-    if(espn){(espn.events||[]).forEach(e=>{const c=e.competitions[0],away=c.competitors.find(x=>x.homeAway==='away'),home=c.competitors.find(x=>x.homeAway==='home');
-      const aAb=AB_ESPN[away.team.abbreviation]||away.team.abbreviation,hAb=AB_ESPN[home.team.abbreviation]||home.team.abbreviation;
-      const g=D.games.find(x=>x.date===(espn.day?.date||LIVE.date||'')&&x.away===aAb&&x.home===hAb)||D.games.find(x=>x.away===aAb&&x.home===hAb&&(x.state==='FUT'||x.state==='PRE'||x.state==='LIVE'||x.state==='CRIT'||!x.end));
-      if(!g)return;const st=e.status.type;const state=st.completed?'OFF':st.state==='in'?'LIVE':st.state==='pre'?'FUT':g.state;
-      LIVE.games[g.id]=Object.assign(LIVE.games[g.id]||{},{id:g.id,state,as_:+away.score||0,hs:+home.score||0,period:c.status?.period,clock:c.status?.displayClock,detail:st.detail||st.description});
+    if(lsData&&lsData.g){Object.entries(lsData.g).forEach(([k,v])=>{if(!k.startsWith('nhl|')||!Array.isArray(v))return;
+      const [stKey,detail,awRaw,as_,hmRaw,hs,iso]=v;
+      const aAb=AB_ESPN[awRaw]||awRaw,hAb=AB_ESPN[hmRaw]||hmRaw;
+      const dStr=iso?new Date(iso).toLocaleDateString('en-CA',{timeZone:'America/New_York'}):'';
+      const g=D.games.find(x=>x.date===dStr&&x.away===aAb&&x.home===hAb)||D.games.find(x=>x.away===aAb&&x.home===hAb&&(x.state==='FUT'||x.state==='PRE'||x.state==='LIVE'||x.state==='CRIT'||!x.end));
+      if(!g)return;const state=stKey==='post'?'OFF':stKey==='in'?'LIVE':stKey==='pre'?'FUT':g.state;
+      LIVE.games[g.id]=Object.assign(LIVE.games[g.id]||{},{id:g.id,state,as_:+as_||0,hs:+hs||0,detail:detail||''});
     })}
     LIVE.ts=Date.now();
   }catch(e){console.warn('live',e)}
