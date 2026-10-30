@@ -126,7 +126,7 @@ function tbl(h,rows){return `<div class="tw"><table><thead><tr>${h.map(x=>`<th>$
 const td=(v,s)=>`<td${s!=null?` data-v="${s}"`:''}>${v}</td>`;
 
 function nhlFormCardHTML(day){
- const fc=D.formCard;if(!fc||!(fc.legs||[]).length||(day&&fc.date&&fc.date!==day))return '';
+ const fc=D.formCard;if(!fc||(day&&fc.date&&fc.date!==day))return '';if(!(fc.legs||[]).length)return `<div class="card" style="grid-column:1/-1;border-color:#2a4f86"><h3 style="margin:0">🏒 ${esc(fc.title||'Recent Form Card')} <span class="pill">${esc(fc.date||'')}</span></h3><div class="small m" style="margin-top:6px">${esc(fc.note||'No player cleared every check today, so the card is empty.')}</div></div>`;
  const A=a=>a==null?'–':(a>0?'+'+a:''+a),Pc=p=>p==null?'–':Math.round(p*100)+'%';
  const legs=fc.legs||[],par=fc.parlays||[],rr2=fc.round_robin_2s||[],rr3=fc.round_robin_3s||[];
  window._shareNhlFormCard=()=>{if(!window.SLTailCard)return;SLTailCard.show({hub:'NHL LAB',title:fc.title||'NHL Goalscorer Parlay · Recent Form',sub:`${fc.date} · 2-Leg ${par[0]?.best_odds||''} · 3-Leg ${par[1]?.best_odds||''} · 4-Leg ${par[2]?.best_odds||''}`,rows:legs.map(l=>({label:`${l.player} (${l.team} ${l.opp}) · Anytime Goal`,meta:`${l.tag} · L5: ${l.l5.goals}G, ${l.l5.sog_total} SOG, ${l.l5.toi_avg}m TOI`,rightTop:`${A(l.price)} (${l.book})`,rightBot:`Model ${Pc(l.p_model)} vs Fair ${Pc(l.nv)}`})),footerLeft:`2-Leg ${par[0]?.best_odds||''} · 3-Leg ${par[1]?.best_odds||''} · 4-Leg ${par[2]?.best_odds||''}`,filename:`nhl-scorer-parlay-${fc.date}.png`})};
