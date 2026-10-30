@@ -87,6 +87,8 @@ main{margin-left:204px;max-width:1520px;padding:18px 24px 60px}
 .nhl-bbar{width:100%;max-width:28px;border-radius:4px 4px 0 0;min-height:4px;transition:height .2s}
 .nhl-bbar.hit{background:linear-gradient(180deg,#3ddc97,#059669)}
 .nhl-bbar.miss{background:linear-gradient(180deg,#fb7185,#be123c);opacity:.8}
+.nhl-bbar.st{background:transparent!important;opacity:1;display:flex;flex-direction:column-reverse;overflow:hidden;transform-origin:bottom;animation:nhlstg .3s ease-out}.nhl-bbar.st.hit{outline:2px solid #3ddc97;outline-offset:-1px}.nhl-bbar.st.miss{outline:2px solid #fb7185;outline-offset:-1px}.nhl-bbar.st i{display:block;width:100%;flex:none}.nhl-bbar.st.miss i{opacity:.5}
+@keyframes nhlstg{from{transform:scaleY(0)}to{transform:scaleY(1)}}.nhl-leg{display:flex;gap:12px;font-size:11.5px;margin:2px 0 6px;color:var(--m,#94a3b8)}.nhl-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .nhl-blbl{display:flex;flex-direction:column;align-items:center;margin-top:4px;font-size:9.5px;line-height:1.15;color:var(--m);text-align:center;white-space:nowrap}
 .nhl-blbl b{color:var(--t);font-size:10px;font-weight:700}
 </style><script src="tailcard.js?v=1"></script><script src="slip.js?v=4"></script><script src="https://sportslabshq.com/sl/sl.js?v=12" defer></script>
@@ -356,7 +358,10 @@ function nhlPlayerChartHTML(p){
  const hitPill=(lab,arr,fn)=>{if(!arr.length)return '';const h=arr.filter(fn).length,pct=Math.round(100*h/arr.length);return `<span class="pill" style="background:${pct>=60?'#0c2b20;border-color:#1d6b4c;color:var(--g)':pct<=35?'#3a0f18;border-color:#7a1f30;color:var(--r)':''}"><b>${lab}:</b> ${h}/${arr.length} (${pct}%)</span>`};
  const hitStrip=G?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${hitPill('L5 .905+ SV%',allLog.slice(0,5),r=>r[6]&&(r[6]-r[7])/r[6]>=0.905)}${hitPill('L10 .905+ SV%',allLog.slice(0,10),r=>r[6]&&(r[6]-r[7])/r[6]>=0.905)}${hitPill('L10 ≤2 GA',allLog.slice(0,10),r=>r[7]<=2)}</div>`:
  `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${hitPill('L5 1+ Pt',allLog.slice(0,5),r=>r[5]+r[6]>=1)}${hitPill('L10 1+ Pt',allLog.slice(0,10),r=>r[5]+r[6]>=1)}${hitPill('L10 1+ Goal',allLog.slice(0,10),r=>r[5]>=1)}${hitPill('L10 3+ SOG',allLog.slice(0,10),r=>r[7]>=3)}${hitPill('Szn 1+ Pt',curLog.length?curLog:prevLog,r=>r[5]+r[6]>=1)}</div>`;
- const bars=games.length?`<div class="nhl-bars">${games.map(r=>{const v=valOf(r),hit=hitOf(r),hPct=Math.max(8,Math.min(100,Math.round((v/mx)*100))),dt=(r[1]||'').slice(5).replace('-','/');return `<div class="nhl-bcol" title="${r[1]} ${r[4]==='H'?'vs':'@'} ${r[3]}"><span class="nhl-bval ${hit?'g':'r'}">${G&&curM[0]==='sv'?v.toFixed(1)+'%':v}</span><div class="nhl-bbar ${hit?'hit':'miss'}" style="height:${hPct}%"></div><div class="nhl-blbl"><b>${r[4]==='H'?'vs':'@'}${esc(r[3])}</b><span>${esc(dt)}</span></div></div>`}).join('')}</div>`:`<div class="small m" style="padding:12px 0">No games logged in this window.</div>`;
+ const isStk=!G&&curM[0]==='p',SGC=['#3ddc97','#f5c451'];
+ const stk=(r,v,hit,hPct)=>{const g=r[5],a=r[6];if(!isStk||!(v>0)||g==null||a==null||g+a!==v)return `<div class="nhl-bbar ${hit?'hit':'miss'}" style="height:${hPct}%"></div>`;return `<div class="nhl-bbar st ${hit?'hit':'miss'}" style="height:${hPct}%" title="${v} PTS = ${g} G + ${a} A">${g?`<i style="height:${g/v*100}%;background:${SGC[0]}"></i>`:''}${a?`<i style="height:${a/v*100}%;background:${SGC[1]}"></i>`:''}</div>`};
+ const leg=isStk&&games.length?`<div class="nhl-leg"><span><i style="background:${SGC[0]}"></i>Goals</span><span><i style="background:${SGC[1]}"></i>Assists</span><span>Outline: green = 1+ pt, red = miss</span></div>`:'';
+ const bars=games.length?`<div class="nhl-bars">${games.map(r=>{const v=valOf(r),hit=hitOf(r),hPct=Math.max(8,Math.min(100,Math.round((v/mx)*100))),dt=(r[1]||'').slice(5).replace('-','/');return `<div class="nhl-bcol" title="${r[1]} ${r[4]==='H'?'vs':'@'} ${r[3]}"><span class="nhl-bval ${hit?'g':'r'}">${G&&curM[0]==='sv'?v.toFixed(1)+'%':v}</span>${stk(r,v,hit,hPct)}<div class="nhl-blbl"><b>${r[4]==='H'?'vs':'@'}${esc(r[3])}</b><span>${esc(dt)}</span></div></div>`}).join('')}</div>`:`<div class="small m" style="padding:12px 0">No games logged in this window.</div>`;
  return `<div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
    <h3 style="margin:0">📊 Game-by-Game Trend &amp; Hit Rates (${esc(curM[1])} · Target ${esc(curM[2])})</h3>
@@ -368,7 +373,7 @@ function nhlPlayerChartHTML(p){
    ${MKTS.map(([k,l,tg])=>`<a class="pill" style="${curM[0]===k?'background:var(--g);color:#04210f':''}" onclick="ls.set('pchart_m','${k}');window._rerenderPlayer('${p.id}')">${l} (${tg})</a>`).join('')}
   </div>
   ${hitStrip}
-  <div class="nhl-chart-wrap">${bars}</div>
+  ${leg}<div class="nhl-chart-wrap">${bars}</div>
  </div>`;
 }
 window._rerenderPlayer=async function(id){
