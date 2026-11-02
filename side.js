@@ -1,0 +1,21 @@
+/* Shared Sports Labs left sidebar (same look as Bet Lab / NHL Lab). Config: window.SLNAV = {key:"storage key", groups:[[title,[[label,href,curKey]]]]}.
+   Current page = link whose curKey matches the file name (or hash). Closed by default on mobile; state saved in localStorage. */
+(function(){
+  var C=window.SLNAV||{groups:[]},H=function(x){return 'https://'+x+'.sportslabshq.com/'};
+  var G=window.SLS?C.groups.slice():C.groups.concat([['Sport Hubs',[['💎 Bet Lab',H('betlab')],['💰 Value Vault',H('betlab')+'value.html'],['🏈 NFL Hub',H('nfllab')],['⚾ MLB Lab',H('mlblab')],['🏒 NHL Lab',H('nhllab')],['⚽ Soccer Hub',H('soccerlab')]]],['Tools',[['⚡ Arb Lab',H('arblab')]]],['',[['Sports Labs home','https://sportslabshq.com/']]]]);
+  var css='.sl-side{position:fixed;top:0;left:0;bottom:0;width:232px;background:#0d1326;border-right:1px solid #262e4d;z-index:60;overflow-y:auto;padding:14px 10px 24px;transform:translateX(-100%);transition:transform .2s ease;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-sizing:border-box}.sl-open .sl-side{transform:none}.sl-side .sl-brand{display:flex;align-items:center;justify-content:space-between;font-weight:800;color:#e6e9f5;margin:2px 6px 12px;font-size:16px}.sl-side h4{margin:16px 8px 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7c86ad}.sl-side a{display:block;padding:7px 10px;border-radius:8px;color:#c9cfe6;text-decoration:none;font-weight:600}.sl-side a:hover{background:#1a2240;color:#fff}.sl-side a.cur{background:#1f2a52;color:#fff;box-shadow:inset 3px 0 0 #60a5fa}.sl-tog{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;border:1px solid #262e4d;background:#141a30;color:#e6e9f5;font-size:18px;cursor:pointer;flex:0 0 auto;margin-right:10px}.sl-tog.sl-float{position:fixed;top:10px;left:10px;z-index:70}body:has(#v2bar) .sl-tog.sl-float{top:60px}@media (max-width:767px){.sl-open .sl-tog.sl-float{opacity:0;pointer-events:none}}.sl-x{background:none;border:0;color:#97a0c3;font-size:20px;cursor:pointer}.sl-scrim{display:none}body{transition:padding-left .2s ease}@media (min-width:768px){body.sl-open{padding-left:232px}}@media (max-width:767px){.sl-open .sl-scrim{display:block;position:fixed;inset:0;background:#0008;z-index:55}}html,body{overflow-x:hidden}';
+  var st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+  var f=(location.pathname.split('/').pop()||'index.html').replace('.html','')||'index';
+  function curKey(){var h=location.hash.replace('#','');return h&&G.some(function(g){return g[1].some(function(l){return l[2]===f+'#'+h})})?f+'#'+h:f}
+  var mob=function(){return innerWidth<768},K=C.key||'sl-sidebar',saved=localStorage.getItem(K),open=saved?saved==='open':!mob();
+  var side=document.createElement('aside');side.className='sl-side';side.setAttribute('aria-label','Site navigation');
+  function draw(){var k=curKey();side.innerHTML='<div class="sl-brand"><span>🧪 Sports Labs</span><button class="sl-x" aria-label="Close menu">‹</button></div>'+G.map(function(g){return '<h4>'+(g[0]||'&nbsp;')+'</h4>'+g[1].map(function(l){return '<a href="'+l[1]+'"'+(l[2]&&l[2]===k?' class="cur" aria-current="page"':'')+'>'+l[0]+'</a>'}).join('')}).join('');side.querySelector('.sl-x').onclick=function(){set(false)};if(window.SLS)SLS.mount(side,{mode:'list'})}
+  var scrim=document.createElement('div');scrim.className='sl-scrim';
+  var tog=document.createElement('button');tog.className='sl-tog';tog.type='button';tog.setAttribute('aria-label','Toggle menu');tog.innerHTML='☰';
+  function set(o,ns){open=o;document.body.classList.toggle('sl-open',o);if(!ns)localStorage.setItem(K,o?'open':'closed');tog.setAttribute('aria-expanded',o)}
+  draw();document.body.prepend(scrim);document.body.prepend(side);
+  var hd=document.querySelector('header:not(#v2bar)');if(hd){hd.prepend(tog);hd.style.display='flex';hd.style.alignItems='center';hd.style.flexWrap='wrap';hd.style.gap='8px'}else{tog.classList.add('sl-float');document.body.prepend(tog);if(!document.getElementById('v2bar'))document.body.style.paddingTop='52px'}
+  tog.onclick=function(){set(!open)};scrim.onclick=function(){set(false)};
+  side.addEventListener('click',function(e){if(e.target.tagName==='A'&&mob())set(false)});addEventListener('hashchange',draw);
+  set(mob()?false:open,true);
+})();
