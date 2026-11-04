@@ -108,6 +108,40 @@ def goalie_info(team, name, gid):
 def inj_list(t):
     return [dict(n=x["name"], st=x["status"], d=x.get("date")) for x in TX.get("inj", {}).get(t, [])]
 
+
+# ---- athlete-level status (each athlete's own roster entry), so a player dropped from the team injury list still gets flagged
+import unicodedata, urllib.request
+EMAP = {"LAK": "LA", "NJD": "NJ", "SJS": "SJ", "TBL": "TB", "UTA": "UTAH"}
+def norm(n): return "".join(c for c in unicodedata.normalize("NFKD", n or "") if c.isalnum()).lower()
+def ath_status():
+    out = {}
+    for t in TA:
+        try:
+            req = urllib.request.Request(f"https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/{EMAP.get(t, t).lower()}/roster", headers={"User-Agent": "Mozilla/5.0"})
+            d = json.load(urllib.request.urlopen(req, timeout=20))
+        except Exception as e:
+            print("roster status unavailable", t, e); continue
+        for g in d.get("athletes", []):
+            for a in g.get("items", []):
+                inj = (a.get("injuries") or [{}])[0]
+                st_ = inj.get("status") or ((a.get("status") or {}).get("name") if (a.get("status") or {}).get("type") not in (None, "active") else None)
+                if st_: out[(t, norm(a.get("fullName")))] = out[("*", norm(a.get("fullName")))] = dict(st=st_, d=(inj.get("date") or "")[:10], src="athlete")
+    return out
+ATH = ath_status()
+def SHORT(s):
+    s = (s or "").lower()
+    return "LTIR" if "long" in s else "IR" if "reserve" in s else "Out" if s.startswith("out") else "DTD" if "day" in s else "Susp" if "susp" in s else s.title() if s else None
+def status_of(d):
+    r = _status_of(d)
+    last = (LOG.get(str(d["id"])) or [{}])[0].get("date")
+    if r and r.get("d") and last and last > r["d"]: return None  # he has played since that report: stale
+    return r
+def _status_of(d):
+    a = ATH.get((d["team"], norm(d["name"]))) or ATH.get(("*", norm(d["name"])))
+    if a: return dict(st=a["st"], short=SHORT(a["st"]), d=a["d"], src="athlete")
+    if d.get("inj"): return dict(st=d["inj"].get("status"), short=SHORT(d["inj"].get("status")), d=d["inj"].get("date"), src="team")
+    return None
+
 OUT = {"season": SEASON, "stats": [["g", "Goals"], ["a", "Assists"], ["p", "Points"], ["s", "Shots on goal"], ["ppp", "PP points"], ["toi", "Ice time"]], "players": {}}
 SIMK = "s"
 for pid, d in PL.items():
@@ -142,10 +176,11 @@ for pid, d in PL.items():
                     simrows.append(dict(d=r["date"], t=r["team"], n=PL[q]["name"], avg=round(base, 2), res=r[SIMK]))
         simrows.sort(key=lambda x: x["d"], reverse=True)
     OUT["players"][pid] = dict(name=d["name"], team=team, pos=d["pos"], grp=grp, opp=opp, home=nx.get("home"), date=nx.get("date"),
-        div=DIV.get(team), odiv=DIV.get(opp), simteams=sorted(sims), inj=d.get("inj"),
+        div=DIV.get(team), odiv=DIV.get(opp), simteams=sorted(sims), inj=status_of(d),
         win=win, owin=ow, goalie=goalie_info(opp, nx.get("goalie"), nx.get("gid")) if nx.get("goalie") else None,
         ctx={k: dict(v=TS[opp][k], r=trank(k, opp, k in ("pace", "space", "pim", "pk"))) for k in ("gapg", "sapg", "pace", "space", "pim", "pk")},
         oinj=inj_list(opp), tinj=inj_list(team), sim=dict(stat="Shots on goal", me=round(me, 2) if me else None, rows=simrows[:12]),
         oweek=[[gdate[g][5:].replace("-", "/"), int(allow[opp][grp][g].get("g", 0))] for g in TG[opp][:10]][::-1])
+OUT["athleteStatus"] = len(ATH) > 0
 json.dump(OUT, open(os.path.join(R, "matchup_an.json"), "w"), separators=(",", ":"))
-print("players", len(OUT["players"]))
+print("players", len(OUT["players"]), "with status", sum(1 for x in OUT["players"].values() if x["inj"]), "athlete-level", sum(1 for x in OUT["players"].values() if x["inj"] and x["inj"]["src"] == "athlete"))
