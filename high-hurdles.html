@@ -1,0 +1,68 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><script src="https://sportslabshq.com/sl/ds.js?v=1"></script><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NHL High Hurdles · NHL Lab</title><meta name="description" content="NHL High Hurdles: players most able to clear 2+ points, 5+ shots on goal and 2+ goals on the next slate.">
+<meta name="theme-color" content="#0b1020">
+<style>
+:root{--bg:#0b1020;--p:#131a2e;--p2:#1a2340;--b:#26304f;--t:#e6ebff;--m:#8d97b8;--a:#4fc3ff;--g:#3ddc97;--r:#ff6b7a;--y:#ffc857;--v:#b28dff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--a);text-decoration:none}
+header.gsh{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(11,16,32,.95);border-bottom:1px solid var(--b)}
+header.gsh a.logo{font-weight:800;font-size:18px;color:var(--t)}header.gsh a.logo b{color:var(--a)}.upd{margin-left:auto;font-size:12px;color:var(--m);background:var(--p);border:1px solid var(--b);padding:4px 10px;border-radius:99px}
+main{max-width:1080px;margin:0 auto;padding:16px}h1{font-size:22px;margin:4px 0 2px}.sub{color:var(--m);margin:0 0 14px;font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.tabs button{background:var(--p);border:1px solid var(--b);color:var(--m);font-weight:700;padding:7px 14px;border-radius:99px;cursor:pointer;font-size:13px}.tabs button.on{background:var(--a);color:#001;border-color:var(--a)}
+.row{background:var(--p);border:1px solid var(--b);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.hd{display:grid;grid-template-columns:34px 1.6fr 1fr .8fr .8fr 1fr 44px 18px;align-items:center;gap:8px;padding:10px 12px;cursor:pointer}
+.hd:hover{background:var(--p2)}.gr{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-weight:800}.gA{background:#3ddc9733;color:var(--g)}.gB{background:#4fc3ff26;color:var(--a)}
+.nm{font-weight:700}.mt{color:var(--m);font-size:12px}.big{font-weight:800;font-size:16px}.lab{font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.06em}
+.chk{font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;white-space:nowrap}.c-ok{background:#3ddc9722;color:var(--g)}.c-pending{background:#8d97b822;color:var(--m)}.c-flag{background:#ffc85722;color:var(--y)}.c-veto{background:#ff6b7a22;color:var(--r)}
+.tr{font-weight:800}.up{color:var(--g)}.down{color:var(--r)}.flat{color:var(--m)}
+.bd{display:none;border-top:1px solid var(--b);padding:12px;background:#0f1528}.open .bd{display:block}
+.why{background:var(--p2);border-left:3px solid var(--a);padding:10px 12px;border-radius:8px;margin-bottom:12px}.why h4,.pan h4{margin:0 0 6px;font-size:12px;color:var(--m);text-transform:uppercase;letter-spacing:.06em}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.pan{background:var(--p);border:1px solid var(--b);border-radius:10px;padding:10px}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px}.bar span:first-child{width:80px;color:var(--m)}.bar .tk{flex:1;height:8px;background:#26304f;border-radius:9px;overflow:hidden}.bar .tk i{display:block;height:100%;background:var(--a)}.bar b{width:42px;text-align:right}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tile{background:var(--p2);border-radius:8px;padding:7px}.tile b{display:block;font-size:15px}.tile small{color:var(--m);font-size:11px}
+.kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed #26304f}.kv span{color:var(--m)}
+table.rec{width:100%;border-collapse:collapse;background:var(--p);border:1px solid var(--b);border-radius:12px;overflow:hidden}table.rec th,table.rec td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--b);font-size:13px}table.rec th{color:var(--m);font-size:11px;text-transform:uppercase}
+.empty{padding:16px;color:var(--m);background:var(--p);border:1px solid var(--b);border-radius:12px}.foot{color:var(--m);font-size:12px;margin-top:14px}
+@media(max-width:760px){.hd{grid-template-columns:30px 1fr auto auto 14px;row-gap:4px}.hd .hm,.hd>div:last-child{display:none}.grid{grid-template-columns:1fr}main{padding:12px}}
+</style></head><body>
+<header class="gsh"><a class="logo" href="./">NHL <b>Lab</b></a><span class="upd" id="upd">Loading…</span></header>
+<main><h1>High Hurdles</h1><p class="sub">Players with a real history of clearing a big line, ranked by our chance for the next slate. Only names that pass the capability check (past hurdle games, volume and ice time) are listed. Tap a row for the breakdown.</p>
+<div class="tabs" id="tabs"></div><div id="list"><div class="empty">Loading…</div></div>
+<h2 style="font-size:17px;margin:22px 0 8px">Graded record</h2><div id="rec"></div>
+<p class="foot" id="foot"></p></main>
+<script>
+const MK=[["p2","2+ Points"],["s5","5+ Shots"],["g2","2+ Goals"]],CK={ok:"✓ Checked",pending:"Check pending",flag:"⚠ Checked, see note",veto:"Held back"};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pc=x=>x==null?"–":Math.round(x*100)+"%",od=a=>a==null?"–":(a>0?"+"+a:a),et=t=>new Date(t).toLocaleString("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+" ET";
+let D,cur="p2";
+function spark(r){const L=r.last10,mx=Math.max(r.hurdle+1,...L.map(g=>g.v)),w=280,h=70,bw=w/L.length;const y=v=>h-4-(v/mx)*(h-14);
+return `<svg viewBox="0 0 ${w} ${h+14}" width="100%" role="img" aria-label="Last 10 games">${L.map((g,i)=>`<rect x="${i*bw+3}" y="${y(g.v)}" width="${bw-6}" height="${h-4-y(g.v)}" rx="3" fill="${g.v>=r.hurdle?'#3ddc97':'#4f5b85'}"><title>${g.d} ${g.at} ${g.o}: ${g.v}</title></rect><text x="${i*bw+bw/2}" y="${h+10}" fill="#8d97b8" font-size="9" text-anchor="middle">${g.o}</text><text x="${i*bw+bw/2}" y="${y(g.v)-2}" fill="#e6ebff" font-size="9" text-anchor="middle">${g.v}</text>`).join("")}<line x1="0" x2="${w}" y1="${y(r.hurdle)}" y2="${y(r.hurdle)}" stroke="#ffc857" stroke-dasharray="4 3"/><text x="${w-2}" y="${y(r.hurdle)-3}" fill="#ffc857" font-size="9" text-anchor="end">${r.hurdle}+</text></svg>`}
+const bar=(l,x)=>x==null?"":`<div class="bar"><span>${l}</span><div class="tk"><i style="width:${Math.min(100,x*100)}%"></i></div><b>${pc(x)}</b></div>`;
+const kv=(k,v)=>v==null||v===""?"":`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+function row(r,i){const R=r.rates,U=r.usage,M=r.matchup,a=M.allowed,g=M.goalie,tr={up:"▲",down:"▼",flat:"►"}[r.trend]||"";
+const shot=r.mk==="s5";
+return `<div class="row" id="r${i}"><div class="hd" onclick="this.parentNode.classList.toggle('open')">
+<div class="gr g${r.grade}">${r.grade}</div><div><div class="nm">${esc(r.player)} <span class="mt">${esc(r.pos||"")}</span></div><div class="mt">${esc(r.team)} ${r.home?"vs":"@"} ${esc(r.opp)} · ${et(r.start)}</div></div>
+<div><div class="lab">Our chance</div><div class="big">${pc(r.p)}</div></div><div class="hm"><div class="lab">Fair</div><b>${od(r.fair)}</b></div>
+<div class="hm"><div class="lab">Book</div><b>${r.book!=null?od(r.book)+" <span class='mt'>"+esc(r.book_letter||"")+"</span>":"–"}</b>${r.edge!=null?`<div class="mt">${r.edge>=0?"+":""}${(r.edge*100).toFixed(1)}% edge</div>`:""}</div>
+<div><span class="chk c-${r.check}">${CK[r.check]||CK.pending}</span></div><div class="tr ${r.trend}" title="Last 10 vs season">${tr}</div><div class="mt">▾</div></div>
+<div class="bd">${r.why?`<div class="why"><h4>Why he clears</h4>${esc(r.why)}${r.check_note?`<div class="mt" style="margin-top:6px">Note: ${esc(r.check_note)}</div>`:""}</div>`:`<div class="why"><h4>Why he clears</h4><span class="mt">Write-up held back after the number check. Data below.</span></div>`}
+<div class="grid"><div class="pan"><h4>Last 10 vs the line</h4>${spark(r)}</div>
+<div class="pan"><h4>Hurdle hit rate</h4>${bar("This season",R.season)}${bar("Last 10",R.l10)}${bar("Last 40",R.l40)}${bar("Last season",R.last_season)}${bar("Within 1+",R.ceiling_pct)}
+${kv("vs "+esc(r.opp),r.vs_opp.games?`${r.vs_opp.hits}/${r.vs_opp.games} (avg ${r.vs_opp.avg})`:"no games")}</div>
+<div class="pan"><h4>Matchup</h4><div class="tiles">${a?`<div class="tile"><b>#${shot?a.shots_rank:a.goals_rank}</b><small>${shot?a.shots_pg+" shots":a.goals_pg+" goals"}/gm allowed to ${a.group}</small></div>`:""}
+${M.opp_sh_rank?`<div class="tile"><b>#${M.opp_sh_rank}</b><small>${M.opp_times_shorthanded_pg} times shorthanded/gm</small></div>`:""}
+${M.pace_5v5_attempts?`<div class="tile"><b>${M.pace_5v5_attempts}</b><small>5-on-5 shot attempts/gm (both teams avg)</small></div>`:""}
+${M.opp_form&&M.opp_form.games?`<div class="tile"><b>${M.opp_form.gf}-${M.opp_form.ga}</b><small>${esc(r.opp)} goals for-against, last ${M.opp_form.games}</small></div>`:""}</div>
+${g?kv("Goalie",esc(g.name)+" ("+esc(g.status)+")")+kv("Save % season / L10",(g.sv!=null?g.sv.toFixed(3):"–")+" / "+(g.l10_sv!=null?g.l10_sv.toFixed(3):"–"))+kv("GSAx L10",g.l10_gsax):""}${kv("Venue",r.home?"Home":"Away")}</div>
+<div class="pan"><h4>Usage</h4>${kv("Ice time L10",U.toi_l10.toFixed(1)+" min")}${kv("Shots/gm (L40)",U.shots_pg)}${kv("PP points/gm",U.pp_pts_pg)}${kv("Power play",U.pp_unit?"Unit "+U.pp_unit.unit:"not on a listed unit")}${kv("Status",esc(r.status))}</div>
+<div class="pan"><h4>Our chance, built from</h4>${kv("Player history + usage",pc(r.p))}${kv("Opponent factor","×"+r.parts.opp_factor)}${r.mk!=="s5"?kv("Goalie factor","×"+r.parts.goalie_factor):""}${kv("Grade band",esc(D.bands[r.market]||""))}</div>
+<div class="pan"><h4>Inputs as of (ET)</h4>${Object.entries(r.asof).map(([k,v])=>kv(k.replace("_"," "),v?et(v):"–")).join("")}</div></div></div></div>`}
+function draw(){document.getElementById("tabs").innerHTML=MK.map(([k,l])=>`<button class="${k===cur?"on":""}" onclick="cur='${k}';draw()">${l} <span class="mt">${D.players.filter(p=>p.mk===k).length}</span></button>`).join("");
+const L=D.players.filter(p=>p.mk===cur);document.getElementById("list").innerHTML=L.length?L.map(row).join(""):`<div class="empty">No players pass the capability check for this hurdle on the next slate.</div>`}
+function rec(){const R=D.record||{},ks=Object.keys(R);document.getElementById("rec").innerHTML=ks.length?`<table class="rec"><tr><th>Hurdle</th><th>Grade</th><th>Record</th><th>Hit rate</th></tr>${ks.flatMap(m=>Object.entries(R[m]).map(([g,[h,n]])=>`<tr><td>${esc(m)}</td><td>${g}</td><td>${h}-${n-h}</td><td>${pc(h/n)}</td></tr>`)).join("")}</table>`:`<div class="empty">No graded results yet. The record starts with the first graded slate.</div>`}
+(async()=>{for(const u of["https://betlab.sportslabshq.com/data/nhl_high_hurdles_page.json","data/nhl_high_hurdles_page.json"]){try{const r=await fetch(u+"?t="+Date.now(),{cache:"no-store"});if(r.ok){D=await r.json();break}}catch(e){}}
+if(!D){document.getElementById("list").innerHTML='<div class="empty">High Hurdles is unavailable right now.</div>';return}
+document.getElementById("upd").textContent="Built "+et(D.updated);document.getElementById("foot").textContent="Slate "+D.slate+". Grades: "+Object.entries(D.bands).map(([k,v])=>k+" "+v).join(" · ")+". Display only.";draw();rec()})();
+</script>
+<script src="https://sportslabshq.com/sl/sl-sports.js?v=2"></script><script>window.SLNAV={key:"nhl-hh-sidebar",groups:[["NHL Lab",[["🏒 Lab home","./"],["🚧 High Hurdles","./high-hurdles.html","high-hurdles"],["📋 Game Script","./game-script.html","game-script"]]]]}</script><script src="side.js"></script><script src="https://sportslabshq.com/sl/sl.js?v=12" defer></script>
+</body></html>
