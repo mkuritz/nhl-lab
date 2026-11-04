@@ -91,7 +91,7 @@ main{margin-left:204px;max-width:1520px;padding:18px 24px 60px}
 @keyframes nhlstg{from{transform:scaleY(0)}to{transform:scaleY(1)}}.nhl-leg{display:flex;gap:12px;font-size:11.5px;margin:2px 0 6px;color:var(--m,#94a3b8)}.nhl-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .nhl-blbl{display:flex;flex-direction:column;align-items:center;margin-top:4px;font-size:9.5px;line-height:1.15;color:var(--m);text-align:center;white-space:nowrap}
 .nhl-blbl b{color:var(--t);font-size:10px;font-weight:700}
-</style><script src="tailcard.js?v=1"></script><script src="slip.js?v=4"></script><script src="https://sportslabshq.com/sl/sl.js?v=12" defer></script>
+</style><script src="matchup-analyzer.js?v=1"></script><script src="tailcard.js?v=1"></script><script src="slip.js?v=4"></script><script src="https://sportslabshq.com/sl/sl.js?v=12" defer></script>
 <script src="https://sportslabshq.com/sl/sl-sports.js?v=2"></script><script src="/sl-neutral.js?v=2" defer></script></head><body>
 <header><div class="top"><button id="mb" class="mb" onclick="document.body.classList.toggle('navopen')" aria-label="Menu">☰</button><div class="logo">NHL <span>Lab</span></div><a class="brand" href="https://sportslabshq.com/" title="Sports Labs">▲ Sports Labs</a><div class="seg" id="fmode"></div><div class="badge" id="badge">Loading…</div></div></header>
 <aside id="side"><nav id="nav"></nav></aside><div id="scrim" onclick="document.body.classList.remove('navopen')"></div><main id="app"><div class="card">Loading data…</div></main>
@@ -397,7 +397,7 @@ function nhlPlayerChartHTML(p){
 window._rerenderPlayer=async function(id){
  const m=document.getElementById('nhl-pmodal-body');
  if(m&&document.getElementById('nhl-pmodal-backdrop')?.classList.contains('open')){
-  m.innerHTML=await player(id,true);sortable(m);try{linkNames(m)}catch(e){}
+  m.innerHTML=await player(id,true);sortable(m);try{linkNames(m)}catch(e){}nhlMuTabs(m,id);
  }else{route()}
 };
 window.openNhlPlayerModal=async function(id){
@@ -414,7 +414,17 @@ window.openNhlPlayerModal=async function(id){
  bd.classList.add('open');
  body.innerHTML=await player(id,true);
  sortable(body);try{linkNames(body)}catch(e){}
+ nhlMuTabs(body,id);
 };
+/* Matchup tab inside the player profile modal (shared Matchup Analyzer component) */
+function nhlMuTabs(body,id){if(!window.SLMatchup||body.querySelector('.nhl-mu-tabs'))return;
+ const nm=(body.querySelector('.hero h2')?.childNodes[0]?.textContent||'').trim();
+ const prof=document.createElement('div');prof.className='nhl-mu-prof';while(body.firstChild)prof.appendChild(body.firstChild);
+ const mu=document.createElement('div');mu.className='nhl-mu-pane';mu.style.display='none';
+ const tb=document.createElement('div');tb.className='tabs nhl-mu-tabs';tb.setAttribute('role','tablist');tb.innerHTML='<a class="on" data-mu="p" role="tab">Profile</a><a data-mu="m" role="tab">Matchup</a>';
+ body.append(tb,prof,mu);
+ tb.addEventListener('click',e=>{const a=e.target.closest('[data-mu]');if(!a)return;e.stopPropagation();tb.querySelectorAll('a').forEach(x=>x.classList.toggle('on',x===a));const m=a.dataset.mu==='m';prof.style.display=m?'none':'';mu.style.display=m?'':'none';if(m&&!mu.dataset.on){mu.dataset.on=1;SLMatchup.nhl(mu,String(id),nm)}});
+}
 window.closeNhlPlayerModal=function(){const bd=document.getElementById('nhl-pmodal-backdrop');if(bd)bd.classList.remove('open')};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNhlPlayerModal()});
 async function player(id,inModal=false){const p=await fetchPlayerObj(id);
