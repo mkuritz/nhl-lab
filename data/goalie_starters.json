@@ -298,104 +298,111 @@
 "name": "Jacob Fowler",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020268|TOR": {
 "id": 8475683,
 "name": "Sergei Bobrovsky",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020269|OTT": {
 "id": 8481035,
 "name": "Samuel Ersson",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020270|NJD": {
 "id": 8474596,
 "name": "Jake Allen",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020270|NYI": {
 "id": 8478009,
 "name": "Ilya Sorokin",
 "source": "Team reports",
-"status": "Likely",
-"ts": "2026-11-07T17:46-05:00"
+"status": "Confirmed",
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020271|CAR": {
 "id": 8481611,
 "name": "Pyotr Kochetkov",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020271|CHI": {
 "id": 8481519,
 "name": "Spencer Knight",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020272|DAL": {
 "id": 8479979,
 "name": "Jake Oettinger",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
+},
+"2026020272|SJS": {
+"id": 8477968,
+"name": "Alex Nedeljkovic",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020273|MIN": {
 "id": 8475717,
 "name": "Calvin Pickard",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020273|TBL": {
 "id": 8483710,
 "name": "Dennis Hildeby",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020274|COL": {
 "id": 8478406,
 "name": "Mackenzie Blackwood",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020275|LAK": {
 "id": 8475311,
 "name": "Darcy Kuemper",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020275|PIT": {
 "id": 8483703,
 "name": "Sergei Murashov",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020276|EDM": {
 "id": 8482221,
 "name": "Devon Levi",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 },
 "2026020276|VAN": {
 "id": 8482447,
 "name": "Leevi Meril\u00e4inen",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T17:46-05:00"
+"ts": "2026-11-07T18:35-05:00"
 }
 }
