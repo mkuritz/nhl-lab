@@ -256,48 +256,55 @@
 "name": "Akira Schmid",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T11:01-05:00"
+"ts": "2026-11-07T11:30-05:00"
 },
 "2026020265|WSH": {
 "id": 8480313,
 "name": "Logan Thompson",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T11:01-05:00"
+"ts": "2026-11-07T11:30-05:00"
 },
 "2026020268|TOR": {
 "id": 8475683,
 "name": "Sergei Bobrovsky",
 "source": "Team reports",
-"status": "Likely",
-"ts": "2026-11-07T11:01-05:00"
+"status": "Confirmed",
+"ts": "2026-11-07T11:30-05:00"
+},
+"2026020269|OTT": {
+"id": 8481035,
+"name": "Samuel Ersson",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-07T11:30-05:00"
 },
 "2026020270|NYI": {
 "id": 8478009,
 "name": "Ilya Sorokin",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T11:01-05:00"
+"ts": "2026-11-07T11:30-05:00"
 },
 "2026020271|CAR": {
 "id": 8481611,
 "name": "Pyotr Kochetkov",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T11:01-05:00"
+"ts": "2026-11-07T11:30-05:00"
 },
 "2026020271|CHI": {
 "id": 8481519,
 "name": "Spencer Knight",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-07T11:01-05:00"
+"ts": "2026-11-07T11:30-05:00"
 },
 "2026020273|MIN": {
 "id": 8475717,
 "name": "Calvin Pickard",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-07T11:01-05:00"
+"ts": "2026-11-07T11:30-05:00"
 }
 }
