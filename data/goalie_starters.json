@@ -362,5 +362,33 @@
 "source": "Team reports",
 "status": "Confirmed",
 "ts": "2026-11-07T22:05-05:00"
+},
+"2026020277|FLA": {
+"id": 8474593,
+"name": "Jacob Markstrom",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-08T11:01-05:00"
+},
+"2026020279|TOR": {
+"id": 8476932,
+"name": "Anthony Stolarz",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-08T11:01-05:00"
+},
+"2026020280|WPG": {
+"id": 8479973,
+"name": "Stuart Skinner",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-08T11:01-05:00"
+},
+"2026020281|CGY": {
+"id": 8482445,
+"name": "Devin Cooley",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-08T11:01-05:00"
 }
 }
