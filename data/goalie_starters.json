@@ -433,11 +433,18 @@
 "status": "Confirmed",
 "ts": "2026-11-08T18:51-05:00"
 },
+"2026020282|ANA": {
+"id": 8476316,
+"name": "Laurent Brossoit",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-08T19:35-05:00"
+},
 "2026020282|PIT": {
 "id": 8481668,
 "name": "Arturs Silovs",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-08T18:51-05:00"
+"ts": "2026-11-08T19:35-05:00"
 }
 }
