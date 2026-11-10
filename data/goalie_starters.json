@@ -293,11 +293,25 @@
 "status": "Confirmed",
 "ts": "2026-11-09T21:36-05:00"
 },
+"2026020286|TOR": {
+"id": 8475683,
+"name": "Sergei Bobrovsky",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-10T11:01-05:00"
+},
 "2026020291|NJD": {
 "id": 8474596,
 "name": "Jake Allen",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-10T10:01-05:00"
+"ts": "2026-11-10T11:01-05:00"
+},
+"2026020291|WPG": {
+"id": 8482076,
+"name": "Nico Daws",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-10T11:01-05:00"
 }
 }
