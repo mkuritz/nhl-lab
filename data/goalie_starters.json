@@ -298,20 +298,48 @@
 "name": "Sergei Bobrovsky",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-10T11:01-05:00"
+"ts": "2026-11-10T12:00-05:00"
+},
+"2026020287|MTL": {
+"id": 8484170,
+"name": "Jacob Fowler",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-10T12:00-05:00"
+},
+"2026020288|OTT": {
+"id": 8481035,
+"name": "Samuel Ersson",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-10T12:00-05:00"
+},
+"2026020289|CBJ": {
+"id": 8475660,
+"name": "Cam Talbot",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-10T12:00-05:00"
+},
+"2026020290|STL": {
+"id": 8480981,
+"name": "Joel Hofer",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-10T12:00-05:00"
 },
 "2026020291|NJD": {
 "id": 8474596,
 "name": "Jake Allen",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-10T11:01-05:00"
+"ts": "2026-11-10T12:00-05:00"
 },
 "2026020291|WPG": {
 "id": 8482076,
 "name": "Nico Daws",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-10T11:01-05:00"
+"ts": "2026-11-10T12:00-05:00"
 }
 }
