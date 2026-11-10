@@ -22,12 +22,18 @@ main{max-width:1080px;margin:0 auto;padding:16px}h1{font-size:22px;margin:4px 0 
 .kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed #26304f}.kv span{color:var(--m)}
 table.rec{width:100%;border-collapse:collapse;background:var(--p);border:1px solid var(--b);border-radius:12px;overflow:hidden}table.rec th,table.rec td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--b);font-size:13px}table.rec th{color:var(--m);font-size:11px;text-transform:uppercase}
 .empty{padding:16px;color:var(--m);background:var(--p);border:1px solid var(--b);border-radius:12px}.foot{color:var(--m);font-size:12px;margin-top:14px}
+.hth{margin-top:26px}.hth h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hth .pill{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--y);font-size:12px;font-weight:700}
+.hth .hsub{color:var(--m);font-size:13px;margin:0 0 10px}.hth .card{background:var(--p);border:1px solid var(--b);border-radius:14px;padding:14px}.hth .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.hth .pct{font-size:30px;font-weight:800;line-height:1.1;color:var(--t)}.hth .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 18px;border-radius:99px;background:var(--p2);border:1px solid var(--b);color:var(--t);font-weight:700;font-size:13px}.hth .btn:hover{border-color:var(--a)}
+.hth .rl{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-height:44px;margin-top:10px;padding:8px 16px;border-radius:22px;background:var(--p2);border:1px solid var(--b);color:var(--m);font-size:13px}.hth .rl b{color:var(--t);white-space:nowrap}
+@media(max-width:760px){.hth .top{flex-direction:column}.hth .pct{font-size:26px}}
 @media(max-width:760px){.hd{grid-template-columns:30px 1fr auto auto 14px;row-gap:4px}.hd .hm,.hd>div:last-child{display:none}.grid{grid-template-columns:1fr}main{padding:12px}}
 </style></head><body>
 <header class="gsh"><a class="logo" href="./">NHL <b>Lab</b></a><span class="upd" id="upd">Loading…</span></header>
 <main><h1>High Hurdles</h1><p class="sub">Players with a real history of clearing a big line, ranked by our chance for the next slate. Only names that pass the capability check (past hurdle games, volume and ice time) are listed. Tap a row for the breakdown.</p>
 <div class="tabs" id="tabs"></div><div id="list"><div class="empty">Loading…</div></div>
 <h2 style="font-size:17px;margin:22px 0 8px">Graded record</h2><div id="rec"></div>
+<section id="hth" class="hth" aria-label="Hat-Trick Hammer"></section>
 <p class="foot" id="foot"></p></main>
 <script>
 const MK=[["p2","2+ Points"],["s5","5+ Shots"],["g2","2+ Goals"]],CK={ok:"✓ Checked",pending:"Check pending",flag:"⚠ Checked, see note",veto:"Held back"};
@@ -53,13 +59,35 @@ ${kv("vs "+esc(r.opp),r.vs_opp.games?`${r.vs_opp.hits}/${r.vs_opp.games} (avg ${
 ${M.opp_sh_rank?`<div class="tile"><b>#${M.opp_sh_rank}</b><small>${M.opp_times_shorthanded_pg} times shorthanded/gm</small></div>`:""}
 ${M.pace_5v5_attempts?`<div class="tile"><b>${M.pace_5v5_attempts}</b><small>5-on-5 shot attempts/gm (both teams avg)</small></div>`:""}
 ${M.opp_form&&M.opp_form.games?`<div class="tile"><b>${M.opp_form.gf}-${M.opp_form.ga}</b><small>${esc(r.opp)} goals for-against, last ${M.opp_form.games}</small></div>`:""}</div>
-${g?kv("Goalie",esc(g.name)+" ("+esc(g.status)+")")+kv("Save % season / L10",(g.sv!=null?g.sv.toFixed(3):"–")+" / "+(g.l10_sv!=null?g.l10_sv.toFixed(3):"–"))+kv("GSAx L10",g.l10_gsax):""}${kv("Venue",r.home?"Home":"Away")}</div>
+${g?kv("Goalie",esc(g.name)+" ("+esc(g.status)+(g.tandem?"; two goalies splitting starts":"")+")")+kv("Save % season / L10",(g.sv!=null?g.sv.toFixed(3):"–")+" / "+(g.l10_sv!=null?g.l10_sv.toFixed(3):"–"))+kv("GSAx L10",g.l10_gsax):""}${kv("Venue",r.home?"Home":"Away")}</div>
 <div class="pan"><h4>Usage</h4>${kv("Ice time L10",U.toi_l10.toFixed(1)+" min")}${kv("Shots/gm (L40)",U.shots_pg)}${kv("PP points/gm",U.pp_pts_pg)}${kv("Power play",U.pp_unit?"Unit "+U.pp_unit.unit:"not on a listed unit")}${kv("Status",esc(r.status))}</div>
 <div class="pan"><h4>Our chance, built from</h4>${kv("Player history + usage",pc(r.p))}${kv("Opponent factor","×"+r.parts.opp_factor)}${r.mk!=="s5"?kv("Goalie factor","×"+r.parts.goalie_factor):""}${kv("Grade band",esc(D.bands[r.market]||""))}</div>
 <div class="pan"><h4>Inputs as of (ET)</h4>${Object.entries(r.asof).map(([k,v])=>kv(k.replace("_"," "),v?et(v):"–")).join("")}</div></div></div></div>`}
 function draw(){document.getElementById("tabs").innerHTML=MK.map(([k,l])=>`<button class="${k===cur?"on":""}" onclick="cur='${k}';draw()">${l} <span class="mt">${D.players.filter(p=>p.mk===k).length}</span></button>`).join("");
 const L=D.players.filter(p=>p.mk===cur);document.getElementById("list").innerHTML=L.length?L.map(row).join(""):`<div class="empty">No players pass the capability check for this hurdle on the next slate.</div>`}
 function rec(){const R=D.record||{},ks=Object.keys(R);document.getElementById("rec").innerHTML=ks.length?`<table class="rec"><tr><th>Hurdle</th><th>Grade</th><th>Record</th><th>Hit rate</th></tr>${ks.flatMap(m=>Object.entries(R[m]).map(([g,[h,n]])=>`<tr><td>${esc(m)}</td><td>${g}</td><td>${h}-${n-h}</td><td>${pc(h/n)}</td></tr>`)).join("")}</table>`:`<div class="empty">No graded results yet. The record starts with the first graded slate.</div>`}
+
+/* Hat-Trick Hammer (live, display only; separate from High Hurdles grades and Highlighted plays) */
+function hthRender(H){const el=document.getElementById("hth");if(!el)return;
+const head=`<h2>Hat-Trick Hammer <span class="pill">New &middot; no track record yet</span></h2><p class="hsub">One long-shot pick per slate to score 3+ goals (a hat trick). Even the best scorer is unlikely to get one, so the most likely result is a miss. Separate from the grades above.</p>`;
+const rs=H&&H.record_stats,rline=`<div class="rl">Record (graded from official box scores)<b>${rs?esc(rs.hits+"-"+rs.misses):"0-0"}</b>${rs&&rs.graded?"":`<span>New, no track record yet</span>`}${rs&&rs.pending?`<span>${esc(rs.pending)} pending</span>`:""}</div>`;
+if(!H){el.innerHTML=head+`<div class="empty">Hat-Trick Hammer is unavailable right now.</div>`;return}
+const c=H.candidate;
+if(!c){el.innerHTML=head+`<div class="empty">${esc(H.reason||"No qualified candidate today.")}</div>`+rline;return}
+const e=c.evidence||{},g=e.goalie,nm=c.profile&&/^\.\/#player\/\d+$/.test(c.profile)?esc(c.name):esc(c.name);
+el.innerHTML=head+`<div class="card"><div class="top"><div><div class="nm" style="font-size:18px">${nm} <span class="mt">${esc(c.pos||"")}</span></div><div class="mt">${esc(c.team)} ${c.home?"vs":"@"} ${esc(c.opp)} &middot; ${esc(c.start_et||"")}</div>
+${c.profile&&/^\.\/#player\/\d+$/.test(c.profile)?`<div style="margin-top:10px"><a class="btn nhl-pl-link" data-pid="${esc(c.id)}" href="${esc(c.profile)}">Player profile</a></div>`:""}</div>
+<div><div class="lab">Our estimated chance of 3+ goals</div><div class="pct">${c.est_p3!=null?(c.est_p3*100).toFixed(1)+"%":"&ndash;"}</div><div class="mt">${esc(H.probability_label)}</div></div></div>
+<div class="why"><h4>Why him</h4>${esc(c.fit)}${(c.narrative||[]).length?`<div style="margin-top:6px"><b>Context:</b> ${c.narrative.map(n=>esc(n.text)).join(" &middot; ")}</div>`:""}</div>
+<div class="why"><h4>The catch</h4>${esc(c.downside)}</div>
+<div class="grid"><div class="pan"><h4>Volume</h4>${kv("Shots/gm (blend)",esc(e.shots_pg_blend))}${kv("Ice time L10",e.toi_l10!=null?esc(e.toi_l10)+" min":"&ndash;")}${kv("Power play",e.pp?"Unit "+esc(e.pp.unit):"not on a listed unit")}${kv("Goals this season",esc(e.season_goals)+" in "+esc(e.season_gp)+" games")}${kv("3+ goal games since 2025-26",esc(e.hat_tricks_since_2025_26))}</div>
+<div class="pan"><h4>Matchup</h4>${kv("Opponent shots allowed/gm",e.opp_shots_allowed_pg!=null?(+e.opp_shots_allowed_pg).toFixed(1):"&ndash;")}${g?kv("Goalie",esc(g.name)+" ("+esc(g.status)+")")+kv("Save % season / L10",(g.sv!=null?(+g.sv).toFixed(3):"&ndash;")+" / "+(g.l10_sv!=null?(+g.l10_sv).toFixed(3):"&ndash;")):kv("Goalie","unknown")}${kv("Status",esc(c.status))}</div>
+<div class="pan"><h4>Last 5</h4>${(e.last5||[]).map(x=>kv(esc(x.d)+" "+esc(x.o),esc(x.g)+" G &middot; "+esc(x.s)+" SOG")).join("")}</div></div>
+<div class="mt" style="margin-top:8px">No price is shown: we have no 3+ goals line, so this is a likelihood, not a value call. ${H.assumptions?"How the estimate is built: "+esc(H.assumptions):""}</div></div>`+rline}
+(async()=>{let H=null;try{const r=await fetch("https://betlab.sportslabshq.com/data/nhl_hat_trick_hammer.json?t="+Date.now(),{cache:"no-store"});if(r.ok)H=await r.json()}catch(e){}
+if(H&&H.updated&&(Date.now()-Date.parse(H.updated))>36*3600e3)H=Object.assign({},H,{candidate:null,reason:"Hat-Trick Hammer data is out of date; no pick shown."});
+if(H&&H.candidate&&Date.parse(H.candidate.start)<=Date.now()&&Date.now()-Date.parse(H.candidate.start)>6*3600e3)H=Object.assign({},H,{candidate:null,reason:"Today's pick posts at about 10 AM ET on game days."});
+hthRender(H)})();
 (async()=>{for(const u of["https://betlab.sportslabshq.com/data/nhl_high_hurdles_page.json","data/nhl_high_hurdles_page.json"]){try{const r=await fetch(u+"?t="+Date.now(),{cache:"no-store"});if(r.ok){D=await r.json();break}}catch(e){}}
 if(!D){document.getElementById("list").innerHTML='<div class="empty">High Hurdles is unavailable right now.</div>';return}
 document.getElementById("upd").textContent="Built "+et(D.updated);document.getElementById("foot").textContent="Slate "+D.slate+". Grades: "+Object.entries(D.bands).map(([k,v])=>k+" "+v).join(" · ")+". Display only.";draw();rec()})();
