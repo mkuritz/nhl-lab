@@ -222,5 +222,19 @@
 "source": "Team reports",
 "status": "Confirmed",
 "ts": "2026-11-10T22:01-05:00"
+},
+"2026020293|BUF": {
+"id": 8480045,
+"name": "Ukko-Pekka Luukkonen",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-11T11:01-05:00"
+},
+"2026020294|CGY": {
+"id": 8481692,
+"name": "Dustin Wolf",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-11T11:01-05:00"
 }
 }
