@@ -228,13 +228,20 @@
 "name": "Ukko-Pekka Luukkonen",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-11T11:01-05:00"
+"ts": "2026-11-11T12:01-05:00"
 },
 "2026020294|CGY": {
-"id": 8481692,
-"name": "Dustin Wolf",
+"id": 8482445,
+"name": "Devin Cooley",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-11T12:01-05:00"
+},
+"2026020294|NYR": {
+"id": 8476914,
+"name": "Joonas Korpisalo",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-11T11:01-05:00"
+"ts": "2026-11-11T12:01-05:00"
 }
 }
