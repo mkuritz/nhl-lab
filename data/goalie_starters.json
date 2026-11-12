@@ -228,27 +228,41 @@
 "name": "Jacob Fowler",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-12T10:45-05:00"
+"ts": "2026-11-12T11:16-05:00"
+},
+"2026020300|TOR": {
+"id": 8476932,
+"name": "Anthony Stolarz",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-12T11:16-05:00"
+},
+"2026020302|FLA": {
+"id": 8481033,
+"name": "Akira Schmid",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-12T11:16-05:00"
 },
 "2026020304|CBJ": {
 "id": 8482982,
 "name": "Jet Greaves",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-12T10:45-05:00"
+"ts": "2026-11-12T11:16-05:00"
 },
 "2026020309|CAR": {
 "id": 8483548,
 "name": "Brandon Bussi",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-12T10:45-05:00"
+"ts": "2026-11-12T11:16-05:00"
 },
 "2026020309|SEA": {
 "id": 8475831,
 "name": "Philipp Grubauer",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-12T10:45-05:00"
+"ts": "2026-11-12T11:16-05:00"
 }
 }
