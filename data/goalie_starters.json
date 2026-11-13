@@ -312,49 +312,56 @@
 "name": "Alex Lyon",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
+},
+"2026020305|CHI": {
+"id": 8481519,
+"name": "Spencer Knight",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020306|DAL": {
 "id": 8479979,
 "name": "Jake Oettinger",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020306|WPG": {
 "id": 8479973,
 "name": "Stuart Skinner",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020307|STL": {
 "id": 8480981,
 "name": "Joel Hofer",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020307|UTA": {
 "id": 8478872,
 "name": "Karel Vejmelka",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020308|LAK": {
 "id": 8475311,
 "name": "Darcy Kuemper",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020308|NYI": {
 "id": 8478009,
 "name": "Ilya Sorokin",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-12T19:15-05:00"
+"ts": "2026-11-12T19:51-05:00"
 },
 "2026020309|CAR": {
 "id": 8483548,
