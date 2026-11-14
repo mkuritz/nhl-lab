@@ -270,13 +270,20 @@
 "name": "Daniil Tarasov",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-14T09:52-05:00"
+"ts": "2026-11-14T10:00-05:00"
 },
 "2026020318|NJD": {
 "id": 8476945,
 "name": "Connor Hellebuyck",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-14T09:52-05:00"
+"ts": "2026-11-14T10:00-05:00"
+},
+"2026020321|SEA": {
+"id": 8478916,
+"name": "Joey Daccord",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-14T10:00-05:00"
 }
 }
