@@ -368,13 +368,20 @@
 "name": "Dan Vladar",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-15T14:01-05:00"
+"ts": "2026-11-15T16:01-05:00"
 },
 "2026020328|CGY": {
 "id": 8482445,
 "name": "Devin Cooley",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-15T14:01-05:00"
+"ts": "2026-11-15T16:01-05:00"
+},
+"2026020330|NSH": {
+"id": 8477424,
+"name": "Juuse Saros",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-15T16:01-05:00"
 }
 }
