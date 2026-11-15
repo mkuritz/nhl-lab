@@ -15,6 +15,14 @@ s = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
 # only data/live/ is local to the preview
 shim = ('(function(){const f=window.fetch;window.fetch=function(u,o){try{if(typeof u==="string"&&/^(\\.\\/)?data\\//.test(u)&&!/^(\\.\\/)?data\\/live\\//.test(u))u="%sdata/"+u.replace(/^(\\.\\/)?data\\//,"")}catch(e){}return f.call(this,u,o)}})();' % PUB)
 s = s.replace('<meta charset="utf-8">', '<meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><script>if(!location.hash)location.hash="#live"</script><script>' + shim + '</script>', 1)
+# preview only: keep the member-gate script from covering the Live Analyzer container (same attribute the Shot Map tab uses)
+assert "<div id=\"lvbox\">" in s
+s = s.replace("<div id=\"lvbox\">", "<div id=\"lvbox\" data-sl-public>")
+# preview only: drop the member-gate / lead-capture scripts so the private page shows no sign-up sheet
+import re as _re
+for _pat in (r'<script[^>]*sl/sl\.js[^>]*></script>', r'<script[^>]*leads-config\.js[^>]*></script>', r'<script[^>]*js/leads\.js[^>]*></script>'):
+    s, _n = _re.subn(_pat, '', s)
+    assert _n == 1, _pat
 s = s.replace('src="/sl-neutral.js?v=2"', 'src="sl-neutral.js?v=2"')
 s = s.replace("<title>NHL Lab</title>", "<title>NHL Lab (private preview)</title>", 1)
 open(os.path.join(a.out, "index.html"), "w", encoding="utf-8").write(s)
