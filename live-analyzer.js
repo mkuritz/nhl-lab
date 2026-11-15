@@ -13,6 +13,7 @@ let BASE='data/live/';
 async function J(u){const r=await fetch(BASE+u+'?t='+Math.floor(Date.now()/20000));if(!r.ok)throw new Error(r.status);return r.json()}
 const q=new URLSearchParams(location.search);if(q.get('lasrc'))BASE=q.get('lasrc').replace(/\/?$/,'/');
 const CSS=`<style id="lacss">
+.la-games{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;margin-bottom:10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}.la-games a{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--m);font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}.la-games a.on{background:var(--a);color:#000;border-color:var(--a)}
 .la-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.la-prev{background:#2a2205;border:1px solid #6b5512;color:var(--y);font-size:11px;font-weight:800;border-radius:99px;padding:3px 10px;letter-spacing:.04em}
 .la-stage{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}.la-stage a{padding:6px 14px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--m);font-weight:700;font-size:13px}.la-stage a.on{background:var(--a);color:#000;border-color:var(--a)}.la-stage a.off{opacity:.4;pointer-events:none}
 .la-score{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.la-score b{font-size:26px;letter-spacing:.5px}.la-score .tm{font-weight:800;font-size:15px}
@@ -84,7 +85,7 @@ window.NHLLive=async function(el,opts){
   const st={gid:+(q.get('lagame'))||(games.find(hasB)||games[0])?.gid,stage:q.get('lastage')||null,team:'all',role:'all',props:false};
   const heads={};(D0&&D0.players||[]).forEach(p=>heads[p.id]=p.head);
   const top=()=>`<div class="la-top"><h2 style="margin:0">⏱️ Live Analyzer</h2><span class="la-prev">BETA · UNCALIBRATED</span><span class="m small">Intermission ratings and live-bet board. Built from official play-by-play and shift data.</span></div>`;
-  const strip=G=>`<div class="game-strip">${games.map(g=>`<a class="${g.gid===G.gid?'on':''}" data-gid="${g.gid}">${esc(g.away)} @ ${esc(g.home)} <span style="opacity:.7">${hasB(g)?(g.score?g.score.away+'–'+g.score.home:'')+(g.ended&&g.ended!=='REG'?' '+g.ended:''):(g.start?esc(g.start):'pending')}</span></a>`).join('')}</div>`;
+  const strip=G=>`<div class="la-games">${games.map(g=>`<a class="${g.gid===G.gid?'on':''}" data-gid="${g.gid}">${esc(g.away)} @ ${esc(g.home)} <span style="opacity:.7">${hasB(g)?(g.score?g.score.away+'–'+g.score.home:'')+(g.ended&&g.ended!=='REG'?' '+g.ended:''):(g.start?esc(g.start):'pending')}</span></a>`).join('')}</div>`;
   const wire=()=>el.querySelectorAll('[data-gid]').forEach(a=>a.onclick=()=>{st.gid=+a.dataset.gid;st.stage=null;draw()});
   async function draw(){
     const G=IDX.games[String(st.gid)]||games[0];if(!G){return}
