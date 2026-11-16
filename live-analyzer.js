@@ -12,8 +12,14 @@ const cache={};
 let BASE='data/live/';
 async function J(u){const r=await fetch(BASE+u+'?t='+Math.floor(Date.now()/20000));if(!r.ok)throw new Error(r.status);return r.json()}
 const q=new URLSearchParams(location.search);if(q.get('lasrc'))BASE=q.get('lasrc').replace(/\/?$/,'/');
+const etToday=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+const fmtDay=d=>new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const shiftDate=(d,n)=>{const x=new Date(d+'T12:00');x.setDate(x.getDate()+n);const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day};
+const relLabel=(d,td)=>{const x=(new Date(d+'T12:00')-new Date(td+'T12:00'))/864e5;return x===-1?'Yesterday':x===0?'Today':x===1?'Tomorrow':fmtDay(d)};
+const latestStage=G=>{const order=['p1','p2','reg','final'];let s=null;for(const k of order) if(G&&G.stages&&G.stages[k]) s=k;return s};
 const CSS=`<style id="lacss">
 .la-games{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;margin-bottom:10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}.la-games a{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--m);font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}.la-games a.on{background:var(--a);color:#000;border-color:var(--a)}
+.la-dates{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:2px 0 8px;margin-bottom:2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}.la-dates a{flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:center;gap:1px;padding:5px 12px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--m);font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;line-height:1.15}.la-dates a.on{background:var(--a);color:#000;border-color:var(--a)}.la-dates a .la-dsub{font-size:10px;font-weight:600;opacity:.75}.la-dates a.on .la-dsub{opacity:.85}.la-dates a.la-arr{flex-direction:row;padding:7px 11px;font-size:16px;line-height:1}.la-dates a.off{opacity:.35;pointer-events:none;cursor:default}
 .la-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.la-prev{background:#2a2205;border:1px solid #6b5512;color:var(--y);font-size:11px;font-weight:800;border-radius:99px;padding:3px 10px;letter-spacing:.04em}
 .la-stage{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}.la-stage a{padding:6px 14px;border-radius:99px;background:var(--p);border:1px solid var(--b);color:var(--m);font-weight:700;font-size:13px}.la-stage a.on{background:var(--a);color:#000;border-color:var(--a)}.la-stage a.off{opacity:.4;pointer-events:none}
 .la-score{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.la-score b{font-size:26px;letter-spacing:.5px}.la-score .tm{font-weight:800;font-size:15px}
@@ -81,16 +87,51 @@ window.NHLLive=async function(el,opts){
   el.innerHTML='<div class="card m">Loading Live Analyzer…</div>';
   try{IDX=await J('index.json')}catch(e){el.innerHTML=`<h2>⏱️ Live Analyzer</h2><div class="card"><span class="la-prev">BETA · UNCALIBRATED</span><p>No intermission boards yet. Boards appear at the end of the 1st and 2nd period of each game, and after regulation if a game is tied.</p></div>`;return}
   let grades=null;try{grades=await J('board_grades.json')}catch(e){}
-  const sortG=()=>Object.values(IDX.games).sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.gid-b.gid);let games=sortG();const hasB=g=>g&&g.stages&&Object.keys(g.stages).length>0;
-  const st={gid:+(q.get('lagame'))||(games.find(hasB)||games[0])?.gid,stage:q.get('lastage')||null,team:'all',role:'all',props:false};
+  const hasB=g=>g&&g.stages&&Object.keys(g.stages).length>0;
+  const allDates=()=>{const td=etToday();const s=new Set([shiftDate(td,-1),td,shiftDate(td,1)]);
+    for(const g of Object.values(IDX.games||{})) if(g.date)s.add(g.date);
+    if(D0&&Array.isArray(D0.games)) for(const g of D0.games) if(g.date)s.add(g.date);
+    return [...s].sort()};
+  const gamesOn=date=>{
+    const fromIdx=Object.values(IDX.games||{}).filter(g=>g.date===date);
+    const have=new Set(fromIdx.map(g=>String(g.gid)));
+    const extra=[];
+    if(D0&&Array.isArray(D0.games)){
+      for(const g of D0.games){
+        if(g.date!==date||have.has(String(g.id)))continue;
+        extra.push({gid:g.id,away:g.away,home:g.home,date:g.date,start:g.time,stages:{},
+          score:(g.as_!=null||g.hs!=null)?{away:g.as_??0,home:g.hs??0}:null,ended:g.end||null});
+      }
+    }
+    const startKey=g=>{const m=String(g.start||'').match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);if(!m)return 9e4+g.gid;let h=+m[1]%12;if(/pm/i.test(m[3]))h+=12;return h*60+ +m[2]};
+    return fromIdx.concat(extra).sort((a,b)=>startKey(a)-startKey(b)||a.gid-b.gid);
+  };
+  const pickGid=(list,prefer)=>{if(prefer&&list.some(g=>g.gid===prefer))return prefer;const hit=list.find(hasB);return (hit||list[0]||{}).gid};
+  const st={date:q.get('ladate')||etToday(),gid:+(q.get('lagame'))||null,stage:q.get('lastage')||null,team:'all',role:'all',props:false};
+  let games=gamesOn(st.date);if(!st.gid)st.gid=pickGid(games);
   const heads={};(D0&&D0.players||[]).forEach(p=>heads[p.id]=p.head);
   const top=()=>`<div class="la-top"><h2 style="margin:0">⏱️ Live Analyzer</h2><span class="la-prev">BETA · UNCALIBRATED</span><span class="m small">Intermission ratings and live-bet board. Built from official play-by-play and shift data.</span></div>`;
-  const strip=G=>`<div class="la-games">${games.map(g=>`<a class="${g.gid===G.gid?'on':''}" data-gid="${g.gid}">${esc(g.away)} @ ${esc(g.home)} <span style="opacity:.7">${hasB(g)?(g.score?g.score.away+'–'+g.score.home:'')+(g.ended&&g.ended!=='REG'?' '+g.ended:''):(g.start?esc(g.start):'pending')}</span></a>`).join('')}</div>`;
-  const wire=()=>el.querySelectorAll('[data-gid]').forEach(a=>a.onclick=()=>{st.gid=+a.dataset.gid;st.stage=null;draw()});
+  const dateBar=()=>{
+    const td=etToday();const dates=allDates();const i=dates.indexOf(st.date);
+    const prev=i>0?dates[i-1]:null,next=(i>=0&&i<dates.length-1)?dates[i+1]:null;
+    const anchors=[shiftDate(td,-1),td,shiftDate(td,1)];
+    const shown=[...new Set([st.date,...anchors])].filter(Boolean).sort();
+    const chip=d=>`<a class="${d===st.date?'on':''}" data-ladate="${d}"><span>${esc(relLabel(d,td))}</span><span class="la-dsub">${esc(fmtDay(d))}</span></a>`;
+    return `<div class="la-dates" role="group" aria-label="Filter by date"><a class="la-arr${prev?'':' off'}" data-lashift="-1" aria-label="Previous date">‹</a>${shown.map(chip).join('')}<a class="la-arr${next?'':' off'}" data-lashift="1" aria-label="Next date">›</a></div>`;
+  };
+  const strip=G=>dateBar()+`<div class="la-games">${games.length?games.map(g=>`<a class="${G&&g.gid===G.gid?'on':''}" data-gid="${g.gid}">${esc(g.away)} @ ${esc(g.home)} <span style="opacity:.7">${hasB(g)?(g.score?g.score.away+'–'+g.score.home:'')+(g.ended&&g.ended!=='REG'?' '+g.ended:''):(g.start?esc(g.start):'pending')}</span></a>`).join(''):'<span class="m small">No games on '+esc(fmtDay(st.date))+'.</span>'}</div>`;
+  const setDate=d=>{st.date=d;games=gamesOn(st.date);st.gid=pickGid(games);st.stage=null;draw()};
+  const wire=()=>{
+    el.querySelectorAll('[data-gid]').forEach(a=>a.onclick=()=>{st.gid=+a.dataset.gid;st.stage=null;draw()});
+    el.querySelectorAll('[data-ladate]').forEach(a=>a.onclick=()=>{if(a.dataset.ladate!==st.date)setDate(a.dataset.ladate)});
+    el.querySelectorAll('[data-lashift]').forEach(a=>a.onclick=()=>{const dates=allDates();const i=dates.indexOf(st.date);const n=dates[i+ +a.dataset.lashift];if(n)setDate(n)});
+  };
   async function draw(){
-    const G=IDX.games[String(st.gid)]||games[0];if(!G){return}
-    if(!hasB(G)){el.innerHTML=top()+strip(G)+`<div class="card"><b>${esc(G.away)} @ ${esc(G.home)}</b>${G.start?' · '+esc(G.start)+' ET':''}<p class="small m" style="margin:6px 0 0">No board yet. The first board is built at the end of the 1st period, the next at the end of the 2nd, and one after regulation if the game is tied. This page updates by itself.</p></div>`+METH;wire();return}
-    const order=['p1','p2','reg','final'].filter(s=>G.stages[s]);if(!G.stages[st.stage])st.stage=G.stages.p2?'p2':order[order.length-1];
+    games=gamesOn(st.date);
+    const G=games.find(g=>g.gid===st.gid)||IDX.games[String(st.gid)]||games[0];
+    if(!G){el.innerHTML=top()+strip(null)+`<div class="card"><p style="margin:0">No games on ${esc(fmtDay(st.date))}.</p></div>`+METH;wire();return}
+    if(!hasB(G)){el.innerHTML=top()+strip(G)+`<div class="card"><b>${esc(G.away)} @ ${esc(G.home)}</b>${G.start?' · '+esc(G.start)+' ET':''}<p class="small m" style="margin:6px 0 0">No board yet. Boards appear at the end of the 1st and 2nd period, and a final board after the game ends. This page updates by itself.</p></div>`+METH;wire();return}
+    if(!G.stages[st.stage])st.stage=latestStage(G);
     const D=await J(G.stages[st.stage].file);D._head=heads;D.gid=G.gid;
     el.innerHTML=top()+strip(G)+`
     <div class="la-stage">${['p1','p2','reg','final'].map(s=>{const has=G.stages[s];const lab=s==='reg'?(has&&D.ot?'OT view (tied after 3)':'End of 3rd'):SN[s];return `<a class="${s===st.stage?'on':''}${has?'':' off'}" data-stage="${s}">${lab}</a>`}).join('')}</div>
@@ -109,6 +150,6 @@ window.NHLLive=async function(el,opts){
   }
   await draw();
   const iv=setInterval(async()=>{if(!el.isConnected){clearInterval(iv);return}if(document.hidden)return;
-    try{const n=await J('index.json');if(n.updated&&n.updated!==IDX.updated){IDX=n;games=sortG();const y=scrollY;await draw();scrollTo(0,y)}}catch(e){}},60000);
+    try{const n=await J('index.json');if(n.updated&&n.updated!==IDX.updated){IDX=n;games=gamesOn(st.date);const y=scrollY;await draw();scrollTo(0,y)}}catch(e){}},60000);
 };
 })();
