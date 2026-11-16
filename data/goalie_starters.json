@@ -279,11 +279,18 @@
 "status": "Confirmed",
 "ts": "2026-11-15T20:36-05:00"
 },
+"2026020331|MTL": {
+"id": 8484170,
+"name": "Jacob Fowler",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-16T13:00-05:00"
+},
 "2026020331|NYR": {
 "id": 8476914,
 "name": "Joonas Korpisalo",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-16T12:01-05:00"
+"ts": "2026-11-16T13:00-05:00"
 }
 }
