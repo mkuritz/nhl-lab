@@ -284,132 +284,139 @@
 "name": "Michael DiPietro",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020333|LAK": {
 "id": 8475311,
 "name": "Darcy Kuemper",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020334|TBL": {
 "id": 8476883,
 "name": "Andrei Vasilevskiy",
 "source": "Team reports",
-"status": "Likely",
-"ts": "2026-11-17T17:45-05:00"
+"status": "Confirmed",
+"ts": "2026-11-17T18:15-05:00"
+},
+"2026020334|WSH": {
+"id": 8480313,
+"name": "Logan Thompson",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020335|EDM": {
 "id": 8482221,
 "name": "Devon Levi",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020335|FLA": {
 "id": 8474593,
 "name": "Jacob Markstrom",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020336|CBJ": {
 "id": 8475660,
 "name": "Cam Talbot",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020336|NYI": {
 "id": 8478009,
 "name": "Ilya Sorokin",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020337|BUF": {
 "id": 8479312,
 "name": "Alex Lyon",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020337|PHI": {
 "id": 8479361,
 "name": "Joseph Woll",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020338|CHI": {
 "id": 8481519,
 "name": "Spencer Knight",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020338|TOR": {
 "id": 8475683,
 "name": "Sergei Bobrovsky",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020339|STL": {
 "id": 8476412,
 "name": "Jordan Binnington",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020340|MIN": {
 "id": 8482661,
 "name": "Jesper Wallstedt",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020341|OTT": {
 "id": 8476999,
 "name": "Linus Ullmark",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020341|WPG": {
 "id": 8479973,
 "name": "Stuart Skinner",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020342|DAL": {
 "id": 8479979,
 "name": "Jake Oettinger",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020342|VGK": {
 "id": 8478499,
 "name": "Adin Hill",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020343|CGY": {
 "id": 8481692,
 "name": "Dustin Wolf",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 },
 "2026020343|SJS": {
 "id": 8482137,
 "name": "Yaroslav Askarov",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-17T17:45-05:00"
+"ts": "2026-11-17T18:15-05:00"
 }
 }
