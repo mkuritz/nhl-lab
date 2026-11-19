@@ -221,69 +221,83 @@
 "name": "Anthony Stolarz",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020348|OTT": {
 "id": 8481035,
 "name": "Samuel Ersson",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020348|PHI": {
 "id": 8479361,
 "name": "Joseph Woll",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020349|EDM": {
 "id": 8482221,
 "name": "Devon Levi",
 "source": "Team reports",
-"status": "Likely",
-"ts": "2026-11-19T12:01-05:00"
+"status": "Confirmed",
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020350|PIT": {
 "id": 8481668,
 "name": "Arturs Silovs",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
+},
+"2026020350|STL": {
+"id": 8480981,
+"name": "Joel Hofer",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020351|WSH": {
 "id": 8480313,
 "name": "Logan Thompson",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020352|MTL": {
 "id": 8482487,
 "name": "Jakub Dobes",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020354|NYI": {
 "id": 8473575,
 "name": "Semyon Varlamov",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020354|WPG": {
 "id": 8482076,
 "name": "Nico Daws",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
 },
 "2026020355|CGY": {
 "id": 8481692,
 "name": "Dustin Wolf",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T12:01-05:00"
+"ts": "2026-11-19T13:01-05:00"
+},
+"2026020357|SEA": {
+"id": 8475831,
+"name": "Philipp Grubauer",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-19T13:01-05:00"
 }
 }
