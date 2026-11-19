@@ -216,11 +216,46 @@
 "status": "Confirmed",
 "ts": "2026-11-18T22:15-05:00"
 },
+"2026020347|TOR": {
+"id": 8476932,
+"name": "Anthony Stolarz",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-19T11:01-05:00"
+},
+"2026020348|OTT": {
+"id": 8481035,
+"name": "Samuel Ersson",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-19T11:01-05:00"
+},
+"2026020350|PIT": {
+"id": 8481668,
+"name": "Arturs Silovs",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-19T11:01-05:00"
+},
+"2026020351|WSH": {
+"id": 8480313,
+"name": "Logan Thompson",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-19T11:01-05:00"
+},
 "2026020352|MTL": {
 "id": 8482487,
 "name": "Jakub Dobes",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T08:05-05:00"
+"ts": "2026-11-19T11:01-05:00"
+},
+"2026020354|WPG": {
+"id": 8482076,
+"name": "Nico Daws",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-19T11:01-05:00"
 }
 }
