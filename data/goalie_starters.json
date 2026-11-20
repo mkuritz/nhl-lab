@@ -249,7 +249,14 @@
 "name": "Devon Levi",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
+},
+"2026020349|TBL": {
+"id": 8476883,
+"name": "Andrei Vasilevskiy",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020350|PIT": {
 "id": 8481668,
@@ -291,7 +298,14 @@
 "name": "Cam Talbot",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
+},
+"2026020353|CHI": {
+"id": 8481519,
+"name": "Spencer Knight",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020354|NYI": {
 "id": 8473575,
@@ -312,48 +326,48 @@
 "name": "Dustin Wolf",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020355|MIN": {
 "id": 8482661,
 "name": "Jesper Wallstedt",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020356|ANA": {
 "id": 8480843,
 "name": "Lukas Dostal",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020357|SEA": {
 "id": 8475831,
 "name": "Philipp Grubauer",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020357|VAN": {
 "id": 8482447,
 "name": "Leevi Meril\u00e4inen",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020358|DAL": {
 "id": 8479979,
 "name": "Jake Oettinger",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 },
 "2026020358|VGK": {
 "id": 8478499,
 "name": "Adin Hill",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-19T18:15-05:00"
+"ts": "2026-11-19T19:35-05:00"
 }
 }
