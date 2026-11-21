@@ -193,83 +193,97 @@
 "name": "Dustin Wolf",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020361|BUF": {
 "id": 8479312,
 "name": "Alex Lyon",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020361|FLA": {
 "id": 8474593,
 "name": "Jacob Markstrom",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020363|BOS": {
 "id": 8480280,
 "name": "Jeremy Swayman",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020363|WSH": {
 "id": 8479292,
 "name": "Charlie Lindgren",
 "source": "Team reports",
-"status": "Likely",
-"ts": "2026-11-21T11:46-05:00"
+"status": "Confirmed",
+"ts": "2026-11-21T12:16-05:00"
+},
+"2026020364|CBJ": {
+"id": 8475660,
+"name": "Cam Talbot",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020364|TOR": {
 "id": 8476932,
 "name": "Anthony Stolarz",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020365|MTL": {
 "id": 8484170,
 "name": "Jacob Fowler",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020365|PHI": {
 "id": 8478435,
 "name": "Dan Vladar",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020366|OTT": {
 "id": 8476999,
 "name": "Linus Ullmark",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020367|DET": {
 "id": 8476434,
 "name": "John Gibson",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
+},
+"2026020367|NYI": {
+"id": 8478009,
+"name": "Ilya Sorokin",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020368|NJD": {
 "id": 8476945,
 "name": "Connor Hellebuyck",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 },
 "2026020369|WPG": {
 "id": 8479973,
 "name": "Stuart Skinner",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-21T11:46-05:00"
+"ts": "2026-11-21T12:16-05:00"
 }
 }
