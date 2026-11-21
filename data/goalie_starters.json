@@ -187,5 +187,26 @@
 "source": "Team reports",
 "status": "Confirmed",
 "ts": "2026-11-19T21:37-05:00"
+},
+"2026020360|CGY": {
+"id": 8481692,
+"name": "Dustin Wolf",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-21T01:51-05:00"
+},
+"2026020363|BOS": {
+"id": 8480280,
+"name": "Jeremy Swayman",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-21T01:51-05:00"
+},
+"2026020367|DET": {
+"id": 8476434,
+"name": "John Gibson",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-21T01:51-05:00"
 }
 }
