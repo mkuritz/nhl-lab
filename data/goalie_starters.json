@@ -167,18 +167,53 @@
 "status": "Likely",
 "ts": "2026-11-24T19:36-05:00"
 },
+"2026020387|BUF": {
+"id": 8480045,
+"name": "Ukko-Pekka Luukkonen",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-25T11:06-05:00"
+},
+"2026020389|FLA": {
+"id": 8474593,
+"name": "Jacob Markstrom",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-25T11:06-05:00"
+},
 "2026020390|NYI": {
 "id": 8478009,
 "name": "Ilya Sorokin",
 "source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-25T11:06-05:00"
+},
+"2026020391|CGY": {
+"id": 8481692,
+"name": "Dustin Wolf",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-25T11:06-05:00"
+},
+"2026020391|PIT": {
+"id": 8481668,
+"name": "Arturs Silovs",
+"source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-25T08:05-05:00"
+"ts": "2026-11-25T11:06-05:00"
+},
+"2026020392|WSH": {
+"id": 8480313,
+"name": "Logan Thompson",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-25T11:06-05:00"
 },
 "2026020394|DET": {
 "id": 8480193,
 "name": "Daniil Tarasov",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T08:05-05:00"
+"ts": "2026-11-25T11:06-05:00"
 }
 }
