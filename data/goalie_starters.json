@@ -284,62 +284,76 @@
 "name": "Daniil Tarasov",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020394|VAN": {
 "id": 8482447,
 "name": "Leevi Meril\u00e4inen",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020395|DAL": {
 "id": 8479979,
 "name": "Jake Oettinger",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
+},
+"2026020395|NSH": {
+"id": 8477424,
+"name": "Juuse Saros",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020396|MIN": {
 "id": 8482661,
 "name": "Jesper Wallstedt",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
+},
+"2026020396|UTA": {
+"id": 8478872,
+"name": "Karel Vejmelka",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020397|COL": {
 "id": 8478406,
 "name": "Mackenzie Blackwood",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020397|MTL": {
 "id": 8484170,
 "name": "Jacob Fowler",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020398|ANA": {
 "id": 8476316,
 "name": "Laurent Brossoit",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020398|SJS": {
 "id": 8477968,
 "name": "Alex Nedeljkovic",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 },
 "2026020399|SEA": {
 "id": 8478916,
 "name": "Joey Daccord",
 "source": "Team reports",
 "status": "Likely",
-"ts": "2026-11-25T19:16-05:00"
+"ts": "2026-11-25T19:36-05:00"
 }
 }
