@@ -214,20 +214,41 @@
 "name": "Anthony Stolarz",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-27T10:01-05:00"
+"ts": "2026-11-27T11:01-05:00"
+},
+"2026020401|NJD": {
+"id": 8474596,
+"name": "Jake Allen",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-27T11:01-05:00"
 },
 "2026020407|CBJ": {
 "id": 8482982,
 "name": "Jet Greaves",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-27T10:01-05:00"
+"ts": "2026-11-27T11:01-05:00"
 },
 "2026020409|ANA": {
 "id": 8476316,
 "name": "Laurent Brossoit",
 "source": "Team reports",
 "status": "Confirmed",
-"ts": "2026-11-27T10:01-05:00"
+"ts": "2026-11-27T11:01-05:00"
+},
+"2026020412|NYI": {
+"id": 8473575,
+"name": "Semyon Varlamov",
+"source": "Team reports",
+"status": "Confirmed",
+"ts": "2026-11-27T11:01-05:00"
+},
+"2026020413|BUF": {
+"id": 8480045,
+"name": "Ukko-Pekka Luukkonen",
+"source": "Team reports",
+"status": "Likely",
+"ts": "2026-11-27T11:01-05:00"
 }
 }
