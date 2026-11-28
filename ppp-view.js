@@ -1,0 +1,75 @@
+/* NHL Power Play Points view (shared by NHL Lab tab + Bet Lab card). Self-contained: own scoped CSS, reads nhl_ppp.json.
+   SLPPP.render(el,{compact:bool}) -> Promise. Book prices shown as Book letters only. */
+(function(){
+  var SRC=window.SLPPP_SRC||(/^(localhost|127\.)/.test(location.hostname)||/^betlab\./.test(location.hostname)?'data/nhl_ppp.json':'https://betlab.sportslabshq.com/data/nhl_ppp.json');
+  var css='.ppp{--pb:#0f1524;--pc:#141c30;--pl:#26304f;--pt:#e8ecfa;--pm:#8f9abb;--pg:#3ddc97;--pr:#ff6b7a;--py:#ffc857;--pa:#4fc3ff;color:var(--pt);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}'+
+  '.ppp *{box-sizing:border-box}.ppp h2{margin:0 0 2px;font-size:22px;font-weight:800;letter-spacing:-.01em}.ppp .sub{color:var(--pm);font-size:13px}.ppp .badge{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;background:#2a1f4f;color:#cbb6ff;vertical-align:middle;letter-spacing:.04em}'+
+  '.ppp .bar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px;align-items:center}.ppp .grp{display:inline-flex;background:var(--pb);border:1px solid var(--pl);border-radius:999px;padding:3px;gap:2px;overflow-x:auto;max-width:100%}'+
+  '.ppp .pill{border:0;background:none;color:var(--pm);font:600 13px system-ui;padding:6px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}.ppp .pill.on{background:#22305a;color:#fff;box-shadow:inset 0 0 0 1px #3b5394}'+
+  '.ppp select.pill{background:var(--pb);border:1px solid var(--pl);color:var(--pt);appearance:none;padding:8px 30px 8px 14px;background-image:linear-gradient(45deg,transparent 50%,#8f9abb 50%),linear-gradient(135deg,#8f9abb 50%,transparent 50%);background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px;background-repeat:no-repeat}'+
+  '.ppp .note{background:var(--pc);border:1px solid var(--pl);border-radius:14px;padding:10px 14px;color:var(--pm);font-size:13px;margin-bottom:10px}'+
+  '.ppp .list{display:grid;gap:8px}.ppp .row{display:grid;grid-template-columns:minmax(170px,1.6fr) 70px 80px 110px 70px 92px;gap:10px;align-items:center;background:var(--pc);border:1px solid var(--pl);border-radius:16px;padding:11px 14px}'+
+  '.ppp .row.hd{background:none;border:0;padding:0 14px;color:var(--pm);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.ppp .nm{font-weight:700}.ppp .mt{color:var(--pm);font-size:12px}.ppp .num{font-variant-numeric:tabular-nums;font-weight:700}'+
+  '.ppp .tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.03em}.ppp .t-Strong{background:#123d2c;color:var(--pg)}.ppp .t-Lean{background:#3d3412;color:var(--py)}.ppp .t-Pass{background:#2a2f44;color:var(--pm)}.ppp .t-No{background:#1d2540;color:#9fb0e0}'+
+  '.ppp .u{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:800;background:#16314f;color:var(--pa);margin-left:6px}.ppp .st{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#3a2a12;color:var(--py)}.ppp .st.g{background:#1d2540;color:#9fb0e0}'+
+  '.ppp .stats{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.ppp .chip{display:inline-flex;gap:5px;align-items:baseline;background:var(--pb);border:1px solid var(--pl);border-radius:999px;padding:3px 10px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}.ppp .chip i{font-style:normal;color:var(--pm)}.ppp .strip{display:inline-flex;gap:3px;padding:0 4px}.ppp .strip b{width:16px;height:16px;border-radius:5px;font-size:10px;line-height:16px;text-align:center;color:#06281b}.ppp .strip b.y{background:var(--pg)}.ppp .strip b.n{background:#2a3352}'+
+  '.ppp .why{grid-column:1/-1;color:var(--pm);font-size:12px;margin-top:-2px}.ppp .pos{color:var(--pg)}.ppp .neg{color:var(--pr)}'+
+  '.ppp details{background:var(--pc);border:1px solid var(--pl);border-radius:16px;margin-top:12px}.ppp summary{cursor:pointer;padding:12px 16px;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}.ppp summary::-webkit-details-marker{display:none}.ppp summary:after{content:"▾";color:var(--pm)}.ppp details[open] summary:after{content:"▴"}.ppp .in{padding:0 16px 14px}'+
+  '.ppp .ctr{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:4px 0 12px}.ppp .ct{background:var(--pb);border:1px solid var(--pl);border-radius:14px;padding:10px 12px}.ppp .ct b{display:block;font-size:20px;font-variant-numeric:tabular-nums}'+
+  '.ppp table{width:100%;border-collapse:collapse;font-size:13px}.ppp td,.ppp th{padding:6px 8px;border-bottom:1px solid var(--pl);text-align:left}.ppp th{color:var(--pm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.ppp ul{margin:6px 0 0;padding-left:18px;color:var(--pm)}.ppp .more{margin-top:10px;width:100%}'+
+  '@media (max-width:760px){.ppp .row{grid-template-columns:1fr auto auto;row-gap:6px}.ppp .row.hd{display:none}.ppp .c-fair,.ppp .c-edge{display:none}.ppp .c-px{grid-column:2/4;justify-self:end}.ppp h2{font-size:19px}}';
+  var st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+  var E=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  var A=function(a){return a==null?'—':(a>0?'+'+a:''+a)},Pc=function(p){return p==null?'—':Math.round(p*100)+'%'};
+  var tm=function(iso){try{return new Date(iso).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'}catch(e){return ''}};
+  var dl=function(d){try{return new Date(d+'T12:00:00').toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}catch(e){return d}};
+  var S={g:'all',u:'all',gm:'all',s:'edge',n:25,sc:'s'};
+  function rowHtml(r){var gc=r.grade==='No price'?'No':r.grade;
+    return '<div class="row"><div><span class="nm" data-player="'+E(r.player)+'">'+E(r.player)+'</span>'+(r.unit?'<span class="u">PP'+r.unit+'</span>':'')+'<div class="mt">'+E(r.team)+' vs '+E(r.opp)+' · '+tm(r.start)+'</div>'+(r.status!=='Ready'?'<span class="st'+(r.status==='Goalie pending'?' g':'')+'">'+(r.status.indexOf('Hold')===0?'⏳ ':'')+E(r.status)+'</span>':'')+'</div>'+
+      '<div class="num">'+Pc(r.p)+'<div class="mt">chance</div></div><div class="num c-fair">'+A(r.fair)+'<div class="mt">fair</div></div>'+
+      '<div class="num c-px">'+(r.price!=null?A(r.price)+'<div class="mt">'+E(r.book)+(r.books>1?' · best of '+r.books:'')+'</div>':'<span class="mt">price pending</span>')+'</div>'+
+      '<div class="num c-edge '+(r.edge==null?'':r.edge>=0?'pos':'neg')+'">'+(r.edge==null?'—':(r.edge>=0?'+':'')+(r.edge*100).toFixed(1)+'%')+'<div class="mt">edge</div></div>'+
+      '<div><span class="tag t-'+gc+'">'+E(r.grade)+'</span></div>'+stats(r)+'<div class="why">'+E(r.why)+'</div></div>'}
+  function f1(x,d){return x==null?'—':(+x).toFixed(d==null?1:d)}
+  function stats(r){var m=S.sc==='m'&&r.ms,ms=r.ms||{};
+    var c=function(l,v,t){return '<span class="chip"'+(t?' title="'+E(t)+'"':'')+'><i>'+l+'</i>'+v+'</span>'};
+    var strip='<span class="strip" title="Last '+(r.strip||[]).length+' games: PP points">'+(r.strip||[]).map(function(g){return '<b class="'+(g[2]>0?'y':'n')+'" title="'+E(g[0]+' vs '+g[1]+': '+g[2]+' PPP')+'">'+(g[2]>0?g[2]:'')+'</b>'}).join('')+'</span>';
+    return '<div class="stats">'+
+      (m?c('PPP hit','<b>'+Pc(ms.hit)+'</b>',ms.hit_gp+' games')+c('PPP/gm',f1(ms.ppp_gm,2))+c('PP TOI/gm',f1(ms.pp_toi_gm)+'m')+c('PP pts/60',f1(ms.ppp60))+c('Span',E(ms.span)+' · '+ms.gp+' GP')
+         :c('PPP hit','<b>'+Pc(r.hit_ssn)+'</b>',r.ppp_games+' of '+r.gp+' games')+c('PP TOI/gm',f1(r.pp_toi_gm)+'m · L10 '+f1(r.pp_toi_l10)+'m')+c('PP pts/60',f1(r.ppp60),'shrunk to league for small samples')+c('PP share',Pc(r.share)))+
+      c('L10',r.l10_hits+'/'+r.l10_n)+strip+
+      c(E(r.team)+' PP opp/gm',f1(r.t_opps_gm)+(r.t_pp_pct!=null?' · '+Pc(r.t_pp_pct)+' PP':''))+c(E(r.opp)+' PK',Pc(r.o_pk_pct)+' · '+f1(r.o_sh_gm)+' pens/gm','times shorthanded per game, this season')+
+      '</div>'}
+  function counters(R){var o='';['Strong','Lean','Pass'].forEach(function(k){var x=R[k]||{won:0,lost:0,void:0,units:0};o+='<div class="ct"><span class="tag t-'+k+'">'+k+'</span><b>'+x.won+'-'+x.lost+(x.void?'-'+x.void:'')+'</b><span class="mt">'+(x.units>=0?'+':'')+x.units.toFixed(2)+' u · W-L'+(x.void?'-Void':'')+'</span></div>'});return o}
+  function tierTbl(t,lab){if(!t)return'';return '<table><tr><th>'+lab+'</th><th>Bets</th><th>W-L</th><th>Units</th><th>ROI</th></tr>'+['Strong','Lean','Pass','All priced'].map(function(k){var x=t[k];if(!x)return'';return '<tr><td>'+k+'</td><td>'+x.n+'</td><td>'+x.won+'-'+x.lost+'</td><td class="'+(x.units>=0?'pos':'neg')+'">'+(x.units>=0?'+':'')+x.units+'</td><td>'+(x.roi==null?'—':(x.roi*100).toFixed(1)+'%')+'</td></tr>'}).join('')+'</table>'}
+  function draw(el,D,o){var R=D.rows||[];
+    var rows=R.filter(function(r){return (S.g==='all'||(S.g==='np'?r.grade==='No price':r.grade===S.g))&&(S.u==='all'||String(r.unit)===S.u)&&(S.gm==='all'||String(r.gid)===S.gm)});
+    rows.sort(S.s==='p'?function(a,b){return b.p-a.p}:function(a,b){return ((b.edge==null?-9:b.edge)-(a.edge==null?-9:a.edge))||(b.p-a.p)});
+    var lim=o.compact?Math.min(S.n,8):S.n,sh=rows.slice(0,lim),b=D.backtest||{},res=(D.results||{}).by_grade||{},pr=b.priced||{};
+    var pill=function(k,v,l){return '<button class="pill'+(S[k]===v?' on':'')+'" data-k="'+k+'" data-v="'+v+'">'+l+'</button>'};
+    var h='<div class="ppp"><h2>⚡ Power Play Points<span class="badge">PREVIEW</span></h2><div class="sub">Chance of 1+ power-play point · '+dl(D.slate)+' slate · '+(D.games||[]).length+' games · updated '+tm(D.updated)+'</div>'+
+    '<div class="bar"><div class="grp">'+pill('g','all','All')+pill('g','Strong','Strong')+pill('g','Lean','Leans')+pill('g','np','No price')+'</div><div class="grp">'+pill('u','all','All units')+pill('u','1','PP1')+pill('u','2','PP2')+'</div><div class="grp">'+pill('s','edge','Edge')+pill('s','p','Chance')+'</div><div class="grp" title="Player stats window">'+pill('sc','s','This Season')+pill('sc','m','Multi-Season')+'</div>'+
+    '<select class="pill" data-k="gm"><option value="all">All games</option>'+(D.games||[]).map(function(g){return '<option value="'+g.gid+'"'+(S.gm===String(g.gid)?' selected':'')+'>'+E(g.away)+' @ '+E(g.home)+' · '+tm(g.start)+'</option>'}).join('')+'</select></div>'+
+    (S.sc==='m'?'<div class="note">Multi-Season: each player\'s regular seasons from 2010-11 (or his first season) through this season; span shown per player. Team and opponent stats stay this season. Model chance always uses this season.</div>':'')+'<div class="note">'+E(D.prices_note)+' Goalies: '+(D.games||[]).reduce(function(n,g){return n+Object.values(g.goalies||{}).filter(function(x){return x.status==='Confirmed'}).length},0)+' of '+2*(D.games||[]).length+' confirmed; rows facing an unconfirmed goalie stay "Goalie pending" and are never Strong.</div>'+
+    '<div class="list"><div class="row hd"><div>Player</div><div>Chance</div><div class="c-fair">Fair</div><div class="c-px">Best price</div><div class="c-edge">Edge</div><div>Grade</div></div>'+(sh.map(rowHtml).join('')||'<div class="note">No players match these filters.</div>')+'</div>'+
+    (rows.length>lim&&!o.compact?'<button class="pill more" data-more="1">Show 25 more ('+(rows.length-lim)+' left)</button>':'')+(o.compact&&o.full?'<a class="pill more" style="display:block;text-align:center;text-decoration:none" href="'+o.full+'">Open the full PP Points board →</a>':'')+
+    ((D.held_out||[]).length?'<details><summary>Held out ('+D.held_out.length+')<span class="mt">Out / IR / scratched</span></summary><div class="in"><ul>'+D.held_out.map(function(x){return '<li>'+E(x.player)+' ('+E(x.team)+') · '+E(x.why)+'</li>'}).join('')+'</ul></div></details>':'')+
+    '<details><summary>How picks are made</summary><div class="in"><ul>'+(D.method||[]).map(function(m){return '<li>'+E(m)+'</li>'}).join('')+'</ul></div></details>'+
+    '<details><summary>Results &amp; accuracy<span class="mt">'+['Strong','Lean','Pass'].map(function(k){var x=res[k]||{won:0,lost:0};return k+' '+x.won+'-'+x.lost}).join(' · ')+'</span></summary><div class="in">'+
+      '<div class="sub" style="margin-bottom:6px">Live record since launch (locked at puck drop; no-shows void)</div><div class="ctr">'+counters(res)+'</div>'+
+      (((D.results||{}).recent||[]).length?'<table><tr><th>Date</th><th>Player</th><th>Grade</th><th>Price</th><th>Result</th></tr>'+D.results.recent.map(function(r){return '<tr><td>'+E(r.date)+'</td><td>'+E(r.player)+'</td><td>'+E(r.grade)+'</td><td>'+A(r.price)+' '+E(r.book||'')+'</td><td class="'+(r.result==='win'?'pos':r.result==='loss'?'neg':'')+'">'+E(r.result)+'</td></tr>'}).join('')+'</table>':'<div class="mt">No graded live rows yet.</div>')+
+      '<div class="sub" style="margin:14px 0 6px">Season backtest '+E(b.window)+' (each game uses only earlier games)</div>'+
+      (b.model?'<div class="ctr"><div class="ct">Model<b>'+b.model.brier+'</b><span class="mt">Brier · '+b.model.n+' player-games</span></div><div class="ct">Player hit-rate baseline<b>'+(b.baseline||{}).brier+'</b><span class="mt">Brier (lower is better)</span></div>'+(pr.book_implied?'<div class="ct">Priced rows: model vs book<b>'+(pr.model||{}).brier+' vs '+pr.book_implied.brier+'</b><span class="mt">Brier on '+pr.book_implied.n+' rows with a Book A price (book is sharper)</span></div>':'')+'</div>':'')+
+      ((b.bins||[]).length?'<table><tr><th>Model chance</th><th>Rows</th><th>Avg model</th><th>Actual hit</th></tr>'+b.bins.map(function(x){return '<tr><td>'+x.band+'</td><td>'+x.n+'</td><td>'+Pc(x.avg_p)+'</td><td>'+Pc(x.hit)+'</td></tr>'}).join('')+'</table>':'')+
+      '<div style="height:10px"></div>'+tierTbl(pr.tiers_open_price,'At opening price')+'<div style="height:8px"></div>'+tierTbl(pr.tiers_last_price,'At final pre-game price')+
+      '<ul>'+(b.notes||[]).map(function(n){return '<li>'+E(n)+'</li>'}).join('')+'</ul></div></details>'+
+    '<div class="mt" style="margin-top:10px">Books shown as Book letters. For entertainment and research; not betting advice. 21+.</div></div>';
+    el.innerHTML=h;
+    el.querySelectorAll('.ppp .pill[data-k]').forEach(function(b){if(b.tagName==='SELECT')b.onchange=function(){S.gm=b.value;S.n=25;draw(el,D,o)};else b.onclick=function(){S[b.dataset.k]=b.dataset.v;S.n=25;draw(el,D,o)}});
+    var m=el.querySelector('[data-more]');if(m)m.onclick=function(){S.n+=25;draw(el,D,o)};
+    if(o.onDraw)try{o.onDraw(el)}catch(e){}
+  }
+  var cache=null;
+  window.SLPPP={src:SRC,load:function(){return cache||(cache=fetch(SRC+(SRC.indexOf('?')<0?'?':'&')+'v='+Date.now()).then(function(r){return r.ok?r.json():null}).catch(function(){return null}))},
+    render:function(el,o){o=o||{};return this.load().then(function(D){if(!D){el.innerHTML='<div class="ppp"><div class="note">Power Play Points board is not available right now.</div></div>';return}draw(el,D,o)})}};
+})();
